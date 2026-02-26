@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informatik Lernmodul</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -38,6 +40,11 @@
             -webkit-appearance: none;
             margin: 0;
         }
+        #qrcode img {
+            margin: 0 auto;
+            border: 8px solid white;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 overflow-x-hidden">
@@ -51,14 +58,14 @@
         <!-- Sidebar -->
         <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:block">
             <div class="h-full flex flex-col px-3 py-4">
-                <div class="flex items-center mb-10 px-2 cursor-pointer" onclick="loadContent('welcome')">
+                <div class="flex items-center mb-8 px-2 cursor-pointer" onclick="loadContent('welcome')">
                     <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white mr-3">
                         <i class="fas fa-code"></i>
                     </div>
                     <span class="text-xl font-bold text-gray-800 dark:text-white tracking-tight">InfoLern</span>
                 </div>
                 
-                <nav class="space-y-2 flex-1 overflow-y-auto" id="main-nav">
+                <nav class="space-y-1 flex-1 overflow-y-auto" id="main-nav">
                     <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Einführung</p>
                     <a href="#" onclick="loadContent('welcome')" data-topic="welcome" class="nav-item active flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
                         <i class="fas fa-home w-5 mr-3"></i> Willkommen
@@ -72,19 +79,23 @@
                         <i class="fas fa-dumbbell w-5 mr-3"></i> Übung: Umrechnung
                     </a>
                     
-                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Hardware</p>
-                    <a href="#" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors opacity-50 cursor-not-allowed">
-                        <i class="fas fa-microchip w-5 mr-3"></i> Komponenten (Bald)
+                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Tools</p>
+                    <a href="#" onclick="loadContent('progress')" data-topic="progress" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
+                        <i class="fas fa-qrcode w-5 mr-3"></i> Fortschritts-QR
                     </a>
                 </nav>
 
-                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto">
+                <!-- Status & Theme -->
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto space-y-2">
+                    <div id="sidebar-stats" class="px-3 py-2 text-[10px] text-gray-400 uppercase font-bold tracking-widest">
+                        Status: Bereit
+                    </div>
                     <button id="theme-toggle" class="flex items-center w-full p-3 text-sm font-medium rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                         <span class="dark:hidden flex items-center">
-                            <i class="fas fa-moon w-5 mr-3"></i> Dunkelmodus an
+                            <i class="fas fa-moon w-5 mr-3"></i> Dunkelmodus
                         </span>
                         <span class="hidden dark:flex items-center">
-                            <i class="fas fa-sun w-5 mr-3"></i> Hellmodus an
+                            <i class="fas fa-sun w-5 mr-3"></i> Hellmodus
                         </span>
                     </button>
                 </div>
@@ -101,25 +112,64 @@
                 </div>
                 
                 <footer class="mt-12 text-center text-gray-400 dark:text-gray-600 text-sm">
-                    <p>&copy; 2024 Informatik-Lernmodul. Erstellt für GitHub Pages.</p>
+                    <p>&copy; 2024 Informatik-Lernmodul. Fortschritt wird lokal gespeichert.</p>
                 </footer>
             </div>
         </main>
     </div>
 
+    <!-- Modals (Custom Alerts) -->
+    <div id="modal-container" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-900 p-8 rounded-3xl max-w-sm w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-800">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-text" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+            <button onclick="closeModal()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl">Verstanden</button>
+        </div>
+    </div>
+
     <script>
-        // Übungs-Logik State
+        // Persistence & State
         let practiceState = {
             level: '',
             currentTask: 0,
             correctCount: 0,
             totalTasks: 20,
-            currentAnswer: '',
-            expectedAnswer: '', // Ohne Leerzeichen für internen Vergleich
-            feedback: null
+            expectedAnswer: '',
+            isActive: false
         };
 
-        // Hilfsfunktion: Formatiert Binärstring in 4er Blöcke von rechts
+        // Statistiken laden
+        let globalStats = JSON.parse(localStorage.getItem('infoLernStats')) || {
+            G: { completed: 0, best: 0 },
+            M: { completed: 0, best: 0 },
+            E: { completed: 0, best: 0 }
+        };
+
+        // Sitzung laden (Falls SuS mitten in der Aufgabe rausgegangen sind)
+        const savedSession = JSON.parse(localStorage.getItem('infoLernSession'));
+        if (savedSession && savedSession.isActive) {
+            practiceState = savedSession;
+        }
+
+        function saveSession() {
+            localStorage.setItem('infoLernSession', JSON.stringify(practiceState));
+            updateSidebarStatus();
+        }
+
+        function saveGlobalStats() {
+            localStorage.setItem('infoLernStats', JSON.stringify(globalStats));
+        }
+
+        function updateSidebarStatus() {
+            const statusEl = document.getElementById('sidebar-stats');
+            if (practiceState.isActive) {
+                statusEl.innerHTML = `<span class="text-purple-500 animate-pulse">Laufend: ${practiceState.level}-Niveau (${practiceState.currentTask}/20)</span>`;
+            } else {
+                statusEl.innerText = "Status: Bereit";
+            }
+        }
+
+        // Hilfsfunktion: Formatiert Binärstring in 4er Blöcke
         function formatBinary(binStr) {
             let result = '';
             let count = 0;
@@ -134,13 +184,13 @@
         }
 
         const topics = {
-            welcome: `
+            welcome: () => `
                 <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-widest mb-4">
                     <span class="h-px w-8 bg-blue-600 dark:bg-blue-400"></span>
                     <span>Übersicht</span>
                 </div>
                 <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">Was möchtest du heute lernen?</h1>
-                <p class="text-lg text-gray-600 dark:text-gray-300 mb-12 leading-relaxed">Wähle ein Modul aus, um zu starten. Wir empfehlen mit der Einführung zu beginnen.</p>
+                <p class="text-lg text-gray-600 dark:text-gray-300 mb-12 leading-relaxed">Wähle ein Modul aus. Dein Fortschritt wird automatisch gespeichert.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div onclick="loadContent('binary')" class="topic-card cursor-pointer p-8 bg-blue-50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-800/50 hover:shadow-xl hover:shadow-blue-500/10">
                         <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6"><i class="fas fa-binary text-xl"></i></div>
@@ -156,7 +206,7 @@
                     </div>
                 </div>
             `,
-            binary: `
+            binary: () => `
                 <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-widest mb-4">
                     <span class="h-px w-8 bg-blue-600 dark:bg-blue-400"></span>
                     <span>Grundlagen</span>
@@ -176,57 +226,100 @@
                 </div>
                 <button onclick="loadContent('welcome')" class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl">Zurück</button>
             `,
-            practice: `
+            practice: () => {
+                let resumeBtn = "";
+                if (practiceState.isActive) {
+                    resumeBtn = `
+                        <button onclick="renderTask()" class="w-full mb-6 p-6 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 flex items-center justify-between group">
+                            <div class="text-left">
+                                <span class="text-xs font-bold uppercase tracking-widest opacity-75">Sitzung fortsetzen</span>
+                                <h4 class="text-xl font-bold">${practiceState.level}-Niveau: Aufgabe ${practiceState.currentTask}/20</h4>
+                            </div>
+                            <i class="fas fa-play text-2xl group-hover:translate-x-2 transition-transform"></i>
+                        </button>
+                    `;
+                }
+                return `
                 <div class="flex items-center space-x-2 text-purple-600 dark:text-purple-400 text-sm font-bold uppercase tracking-widest mb-4">
                     <span class="h-px w-8 bg-purple-600 dark:bg-purple-400"></span>
                     <span>Trainingseinheit</span>
                 </div>
                 <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6">Binärcode Umrechnung</h1>
-                <p class="text-lg text-gray-600 dark:text-gray-300 mb-10">Wähle dein Niveau aus. Jede Runde besteht aus 20 Aufgaben.</p>
+                
+                ${resumeBtn}
+
+                <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">Starte eine neue Runde oder fahre fort:</p>
                 
                 <div class="grid grid-cols-1 gap-4">
-                    <button onclick="startPractice('G')" class="flex items-center justify-between p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl hover:scale-[1.02] transition-transform">
-                        <div class="text-left">
-                            <span class="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full uppercase">G-Niveau</span>
-                            <h4 class="text-xl font-bold mt-2 dark:text-white">Grundlegend</h4>
-                            <p class="text-sm text-gray-500">Zahlen bis 6 Stellen (0 - 63)</p>
-                        </div>
+                    <button onclick="startPractice('G')" class="flex items-center justify-between p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl hover:scale-[1.01] transition-transform">
+                        <div class="text-left"><h4 class="text-xl font-bold dark:text-white">G-Niveau (6 Bit)</h4><p class="text-sm text-gray-500">Zahlen 0 - 63</p></div>
                         <i class="fas fa-chevron-right text-green-500"></i>
                     </button>
-                    
-                    <button onclick="startPractice('M')" class="flex items-center justify-between p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl hover:scale-[1.02] transition-transform">
-                        <div class="text-left">
-                            <span class="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full uppercase">M-Niveau</span>
-                            <h4 class="text-xl font-bold mt-2 dark:text-white">Mittleres Niveau</h4>
-                            <p class="text-sm text-gray-500">Zahlen bis 8 Stellen (0 - 255)</p>
-                        </div>
+                    <button onclick="startPractice('M')" class="flex items-center justify-between p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl hover:scale-[1.01] transition-transform">
+                        <div class="text-left"><h4 class="text-xl font-bold dark:text-white">M-Niveau (8 Bit)</h4><p class="text-sm text-gray-500">Zahlen 0 - 255</p></div>
                         <i class="fas fa-chevron-right text-blue-500"></i>
                     </button>
-                    
-                    <button onclick="startPractice('E')" class="flex items-center justify-between p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl hover:scale-[1.02] transition-transform">
-                        <div class="text-left">
-                            <span class="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full uppercase">E-Niveau</span>
-                            <h4 class="text-xl font-bold mt-2 dark:text-white">Erweitert</h4>
-                            <p class="text-sm text-gray-500">Zahlen bis 10 Stellen (0 - 1023)</p>
-                        </div>
+                    <button onclick="startPractice('E')" class="flex items-center justify-between p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl hover:scale-[1.01] transition-transform">
+                        <div class="text-left"><h4 class="text-xl font-bold dark:text-white">E-Niveau (10 Bit)</h4><p class="text-sm text-gray-500">Zahlen 0 - 1023</p></div>
                         <i class="fas fa-chevron-right text-red-500"></i>
                     </button>
                 </div>
-            `
+            `;
+            },
+            progress: () => {
+                return `
+                <div class="flex items-center space-x-2 text-orange-600 dark:text-orange-400 text-sm font-bold uppercase tracking-widest mb-4">
+                    <span class="h-px w-8 bg-orange-600 dark:bg-orange-400"></span>
+                    <span>Zertifikat & Nachweis</span>
+                </div>
+                <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6">Dein Lernfortschritt</h1>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center">
+                        <div class="text-sm text-gray-500 font-bold uppercase">G-Niveau</div>
+                        <div class="text-2xl font-bold text-blue-600">${globalStats.G.completed} Runden</div>
+                    </div>
+                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center">
+                        <div class="text-sm text-gray-500 font-bold uppercase">M-Niveau</div>
+                        <div class="text-2xl font-bold text-blue-600">${globalStats.M.completed} Runden</div>
+                    </div>
+                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center">
+                        <div class="text-sm text-gray-500 font-bold uppercase">E-Niveau</div>
+                        <div class="text-2xl font-bold text-blue-600">${globalStats.E.completed} Runden</div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 text-center">
+                    <h3 class="text-xl font-bold mb-4">Fortschritts-QR-Code</h3>
+                    <p class="text-gray-500 text-sm mb-6 text-balance">Lass diesen Code scannen, um deine Ergebnisse nachzuweisen.</p>
+                    <div id="qrcode" class="mb-6 flex justify-center"></div>
+                    <button onclick="generateQR()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm">Code aktualisieren</button>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <button onclick="resetAllProgress()" class="text-red-500 text-xs font-bold uppercase hover:underline">Gesamten Fortschritt zurücksetzen</button>
+                </div>
+            `;
+            }
         };
 
         function loadContent(topicId) {
             const contentArea = document.getElementById('content-area');
             contentArea.style.opacity = '0';
             setTimeout(() => {
-                contentArea.innerHTML = `<div id="dynamic-content">${topics[topicId]}</div>`;
+                contentArea.innerHTML = `<div id="dynamic-content">${topics[topicId]()}</div>`;
                 document.querySelectorAll('.nav-item').forEach(item => {
                     item.classList.remove('active');
                     if(item.getAttribute('data-topic') === topicId) item.classList.add('active');
                 });
                 contentArea.style.opacity = '1';
+                
+                // QR Code generieren wenn wir auf der Progress-Seite sind
+                if (topicId === 'progress') generateQR();
+                
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }, 200);
+            updateSidebarStatus();
         }
 
         // --- Practice Logic ---
@@ -236,12 +329,15 @@
                 currentTask: 1,
                 correctCount: 0,
                 totalTasks: 20,
-                feedback: null
+                isActive: true
             };
+            saveSession();
             renderTask();
         }
 
         function renderTask() {
+            if (!practiceState.isActive) return;
+
             const bits = practiceState.level === 'G' ? 6 : (practiceState.level === 'M' ? 8 : 10);
             const maxVal = Math.pow(2, bits) - 1;
             const randomVal = Math.floor(Math.random() * (maxVal + 1));
@@ -257,13 +353,16 @@
             } else {
                 question = `Wandle die Zahl <span class="font-mono text-purple-600 dark:text-purple-400 font-bold">${randomVal}</span> in einen Binärcode um (${bits} Bit):`;
                 practiceState.expectedAnswer = randomVal.toString(2).padStart(bits, '0');
-                placeholder = "Binärcode (z.B. ${formatBinary(practiceState.expectedAnswer)})";
+                // FIXED: Template literal with backticks for placeholder
+                placeholder = `Binärcode (z.B. ${formatBinary(practiceState.expectedAnswer)})`;
             }
 
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
                 <div class="flex justify-between items-center mb-8">
-                    <span class="text-sm font-bold text-gray-400 uppercase tracking-widest">Niveau: ${practiceState.level}</span>
+                    <button onclick="loadContent('practice')" class="text-xs font-bold text-gray-400 uppercase hover:text-purple-500 transition-colors">
+                        <i class="fas fa-pause mr-1"></i> Pausieren & Zurück
+                    </button>
                     <span class="text-sm font-bold text-purple-600 dark:text-purple-400">Aufgabe ${practiceState.currentTask} / ${practiceState.totalTasks}</span>
                 </div>
                 
@@ -286,6 +385,7 @@
                 </div>
             `;
             
+            document.getElementById('answer-input').focus();
             document.getElementById('answer-input').addEventListener('keypress', (e) => {
                 if(e.key === 'Enter') checkAnswer();
             });
@@ -295,8 +395,6 @@
             const input = document.getElementById('answer-input');
             const btn = document.getElementById('submit-btn');
             const feedback = document.getElementById('feedback-area');
-            
-            // Ignoriere alle Leerzeichen in der Antwort der Schüler
             const userAnswer = input.value.trim().replace(/\s/g, '');
 
             if (userAnswer === "") return;
@@ -309,18 +407,19 @@
                 feedback.innerHTML = `<span class="text-green-500"><i class="fas fa-check-circle mr-2"></i> Richtig!</span>`;
                 input.classList.add('border-green-500', 'bg-green-50', 'dark:bg-green-900/20');
             } else {
-                // Bei Fehlern zeigen wir die Antwort formatiert an, wenn es Binär war
                 const displayAnswer = (practiceState.expectedAnswer.length > 5 && !isNaN(parseInt(practiceState.expectedAnswer[0]))) 
                                       ? formatBinary(practiceState.expectedAnswer) 
                                       : practiceState.expectedAnswer;
-                                      
-                feedback.innerHTML = `<span class="text-red-500"><i class="fas fa-times-circle mr-2"></i> Falsch! Richtig wäre: ${displayAnswer}</span>`;
+                feedback.innerHTML = `<span class="text-red-500"><i class="fas fa-times-circle mr-2"></i> Falsch! Richtig: ${displayAnswer}</span>`;
                 input.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
             }
+
+            saveSession();
 
             setTimeout(() => {
                 if (practiceState.currentTask < practiceState.totalTasks) {
                     practiceState.currentTask++;
+                    saveSession();
                     renderTask();
                 } else {
                     showFinalResult();
@@ -330,36 +429,71 @@
 
         function showFinalResult() {
             const percentage = (practiceState.correctCount / practiceState.totalTasks) * 100;
-            let message = percentage >= 80 ? "Hervorragend!" : (percentage >= 50 ? "Gut gemacht!" : "Übung macht den Meister!");
             
+            // Statistiken aktualisieren
+            const lvl = practiceState.level;
+            globalStats[lvl].completed += 1;
+            if (percentage > globalStats[lvl].best) globalStats[lvl].best = percentage;
+            saveGlobalStats();
+
+            // Sitzung löschen
+            practiceState.isActive = false;
+            localStorage.removeItem('infoLernSession');
+            updateSidebarStatus();
+
             document.getElementById('content-area').innerHTML = `
                 <div class="text-center py-10">
                     <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
                         <i class="fas fa-trophy"></i>
                     </div>
-                    <h2 class="text-3xl font-extrabold mb-2 dark:text-white">${message}</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg">Du hast ${practiceState.correctCount} von ${practiceState.totalTasks} Aufgaben richtig gelöst.</p>
+                    <h2 class="text-3xl font-extrabold mb-2 dark:text-white">Abgeschlossen!</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg">Niveau: ${practiceState.level} | ${practiceState.correctCount}/${practiceState.totalTasks} richtig.</p>
                     
                     <div class="max-w-xs mx-auto bg-gray-100 dark:bg-gray-800 rounded-2xl p-6 mb-10">
                         <div class="text-4xl font-bold text-purple-600 mb-1">${percentage}%</div>
-                        <div class="text-xs uppercase font-bold text-gray-400">Erfolgsquote</div>
+                        <div class="text-xs uppercase font-bold text-gray-400">Trefferquote</div>
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button onclick="loadContent('practice')" class="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700">Nochmal versuchen</button>
-                        <button onclick="loadContent('welcome')" class="px-8 py-3 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-300">Zum Hauptmenü</button>
+                        <button onclick="loadContent('practice')" class="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700">Neue Runde</button>
+                        <button onclick="loadContent('progress')" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700">QR-Nachweis</button>
                     </div>
                 </div>
             `;
         }
 
-        // Init
-        window.onload = () => loadContent('welcome');
+        // QR Code Generation
+        function generateQR() {
+            const el = document.getElementById("qrcode");
+            if (!el) return;
+            el.innerHTML = "";
+            
+            const data = {
+                user: "Schüler",
+                stats: globalStats,
+                timestamp: new Date().toLocaleDateString('de-DE')
+            };
+            
+            new QRCode(el, {
+                text: JSON.stringify(data),
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
 
-        // Toggle Bit Logic
-        let currentTotal = 0;
+        function resetAllProgress() {
+            if (confirm("Möchtest du wirklich deinen gesamten Fortschritt löschen?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
         function toggleBit(btn, value) {
             const isActive = btn.getAttribute('data-active') === 'true';
+            let currentTotal = parseInt(document.getElementById('decimal-result').innerText);
             if (isActive) {
                 btn.setAttribute('data-active', 'false');
                 btn.innerText = '0';
@@ -374,6 +508,16 @@
             document.getElementById('decimal-result').innerText = currentTotal;
         }
 
+        // Modals
+        function openModal(title, text) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-text').innerText = text;
+            document.getElementById('modal-container').classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+
         // Theme Toggle
         const themeToggle = document.getElementById('theme-toggle');
         const html = document.documentElement;
@@ -386,6 +530,12 @@
         document.getElementById('menu-btn').addEventListener('click', () => {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
         });
+
+        window.onload = () => {
+            loadContent('welcome');
+            updateSidebarStatus();
+            if (localStorage.getItem('theme') === 'light') html.classList.remove('dark');
+        };
     </script>
 </body>
 </html>
