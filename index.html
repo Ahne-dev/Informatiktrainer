@@ -456,6 +456,24 @@
             }
             practiceState.expectedAnswer = expected;
 
+            // Hilfstabelle für G-Niveau
+            let helpTable = "";
+            if (practiceState.level === 'G') {
+                helpTable = `
+                    <div class="mb-8 p-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-800/30">
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-4 text-center">Rechenhilfe (Zweierpotenzen)</p>
+                        <div class="flex justify-center gap-2 overflow-x-auto pb-2">
+                            ${[32, 16, 8, 4, 2, 1].map((v, i) => `
+                                <div class="flex flex-col items-center min-w-[3.5rem] p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm">
+                                    <span class="text-xs font-black dark:text-white">${v}</span>
+                                    <span class="text-[9px] font-bold text-slate-400 mt-1">2<sup>${5-i}</sup></span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
                 <div class="flex justify-between items-center mb-10">
@@ -470,9 +488,11 @@
                     </div>
                 </div>
                 
-                <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full mb-16 overflow-hidden shadow-inner">
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full mb-10 overflow-hidden shadow-inner">
                     <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full transition-all duration-700" style="width: ${(practiceState.currentTask / practiceState.totalTasks) * 100}%"></div>
                 </div>
+
+                ${helpTable}
 
                 <div class="text-center max-w-xl mx-auto mb-12">
                     <p class="text-xl text-slate-500 dark:text-slate-400 font-bold leading-relaxed mb-4">${question}</p>
@@ -494,6 +514,8 @@
         function checkAnswer() {
             const input = document.getElementById('answer-input');
             const feedback = document.getElementById('feedback-area');
+            
+            // Leerzeichen werden hier entfernt, um eine flexible Eingabe zu ermöglichen
             const userAnswer = input.value.trim().replace(/\s/g, '');
             if (!userAnswer) return;
 
