@@ -7,269 +7,143 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #020617; 
-            margin: 0;
-            color: white;
-        }
-        /* Verhindert das Flackern beim Laden */
-        [v-cloak] { display: none; }
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: white; margin: 0; }
+        .bg-card { background-color: #0f172a; border: 1px solid #1e293b; }
     </style>
 </head>
 <body>
-    <div id="root">
-        <div class="flex items-center justify-center min-h-screen">
-            <div class="text-blue-500 font-bold animate-pulse uppercase tracking-widest">Lade Umgebung...</div>
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <script type="text/babel">
-        // Sicherstellen, dass wir auf die globalen Variablen zugreifen
-        const { useState, useMemo, useEffect } = React;
+    <script>
+        const e = React.createElement;
+        const { useState, useEffect } = React;
 
-        // Robuste Icon-Komponente
+        // Icon-Komponente ohne JSX
         const Icon = ({ name, size = 24, className = "" }) => {
             const [svg, setSvg] = useState("");
-            
             useEffect(() => {
-                const renderIcon = () => {
-                    if (window.lucide && window.lucide.icons && window.lucide.icons[name]) {
-                        const iconSvg = window.lucide.icons[name].toSvg({
-                            width: size,
-                            height: size,
-                            class: className,
-                            'stroke-width': 2
-                        });
-                        setSvg(iconSvg);
-                    }
-                };
-
-                renderIcon();
-                // Falls Lucide noch nicht bereit war, kurz warten und nochmal versuchen
-                const timer = setTimeout(renderIcon, 100);
-                return () => clearTimeout(timer);
-            }, [name, size, className]);
-
-            return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center" />;
-        };
-
-        const BINARY_LOGIC = {
-            formatBinary: (binStr) => {
-                if (typeof binStr !== 'string' || !/^[01]+$/.test(binStr)) return binStr;
-                return binStr.split('').reverse().join('').match(/.{1,4}/g).join(' ').split('').reverse().join('');
-            },
-            createTasks: (diff) => {
-                const tasks = [];
-                for (let i = 0; i < 20; i++) {
-                    let decimal, question, answer, label;
-                    const isBinToDec = i >= 10;
-                    if (diff === 'G') {
-                        decimal = Math.floor(Math.random() * 64);
-                        question = isBinToDec ? decimal.toString(2).padStart(6, '0') : decimal;
-                        answer = isBinToDec ? decimal.toString() : decimal.toString(2).padStart(6, '0');
-                        label = isBinToDec ? 'Binär → Dezimal' : 'Dezimal → Binär (6 Bit)';
-                    } else if (diff === 'M') {
-                        decimal = Math.floor(Math.random() * 256);
-                        question = isBinToDec ? decimal.toString(2).padStart(8, '0') : decimal;
-                        answer = isBinToDec ? decimal.toString() : decimal.toString(2).padStart(8, '0');
-                        label = isBinToDec ? 'Binär → Dezimal' : 'Dezimal → Binär (8 Bit)';
-                    } else {
-                        const mode = Math.random();
-                        if (mode < 0.4) {
-                            decimal = Math.floor(Math.random() * 4096);
-                            question = isBinToDec ? decimal.toString(2).padStart(12, '0') : decimal;
-                            answer = isBinToDec ? decimal.toString() : decimal.toString(2).padStart(12, '0');
-                            label = isBinToDec ? '12-Bit Umwandlung' : 'Dezimal → Binär';
-                        } else if (mode < 0.7) {
-                            decimal = Math.floor(Math.random() * 256);
-                            question = isBinToDec ? decimal.toString(16).toUpperCase() : decimal;
-                            answer = isBinToDec ? decimal.toString() : decimal.toString(16).toUpperCase();
-                            label = isBinToDec ? 'Hex → Dezimal' : 'Dezimal → Hex';
-                        } else {
-                            decimal = Math.floor(Math.random() * 256) - 128;
-                            const bit8 = (decimal < 0 ? (256 + decimal) : decimal).toString(2).padStart(8, '0');
-                            question = isBinToDec ? bit8 : decimal;
-                            answer = isBinToDec ? decimal.toString() : bit8;
-                            label = isBinToDec ? 'Zweierkomplement' : 'Dezimal → Komplement';
-                        }
-                    }
-                    tasks.push({ question, answer: answer.toString(), label });
+                if (window.lucide && window.lucide.icons[name]) {
+                    setSvg(window.lucide.icons[name].toSvg({ width: size, height: size, class: className, 'stroke-width': 2 }));
                 }
-                return tasks.sort(() => Math.random() - 0.5);
-            }
+            }, [name]);
+            return e('span', { dangerouslySetInnerHTML: { __html: svg }, className: "inline-flex items-center justify-center" });
         };
 
         const App = () => {
             const [view, setView] = useState('welcome');
-            const [user, setUser] = useState({ name: '', progress: { G: 0, M: 0, E: 0 } });
+            const [name, setName] = useState('');
+            const [score, setScore] = useState(0);
+            const [currentTask, setCurrentTask] = useState(0);
             const [difficulty, setDifficulty] = useState('G');
-            const [session, setSession] = useState({ tasks: [], currentIndex: 0, score: 0 });
-            const [userInput, setUserInput] = useState('');
+            const [tasks, setTasks] = useState([]);
+            const [input, setInput] = useState('');
             const [feedback, setFeedback] = useState(null);
 
-            const startTraining = (lvl) => {
-                setSession({ tasks: BINARY_LOGIC.createTasks(lvl), currentIndex: 0, score: 0 });
-                setDifficulty(lvl);
-                setFeedback(null);
-                setUserInput('');
-                setView('exercise');
-            };
-
-            const handleCheck = () => {
-                if (!userInput) return;
-                const current = session.tasks[session.currentIndex];
-                const cleanIn = userInput.trim().toUpperCase();
-                const cleanAns = current.answer.toUpperCase();
-                
-                if (cleanIn === cleanAns) {
-                    setFeedback({ correct: true, val: current.answer });
-                    setSession(s => ({ ...s, score: s.score + 1 }));
-                } else {
-                    setFeedback({ correct: false, val: current.answer });
+            const generateTasks = (diff) => {
+                let newTasks = [];
+                for(let i=0; i<20; i++) {
+                    let dec = Math.floor(Math.random() * (diff === 'G' ? 64 : 256));
+                    newTasks.push({
+                        q: i < 10 ? dec : dec.toString(2).padStart(diff === 'G' ? 6 : 8, '0'),
+                        a: i < 10 ? dec.toString(2).padStart(diff === 'G' ? 6 : 8, '0') : dec.toString(),
+                        label: i < 10 ? 'Dezimal → Binär' : 'Binär → Dezimal'
+                    });
                 }
+                setTasks(newTasks.sort(() => Math.random() - 0.5));
+                setDifficulty(diff);
+                setView('game');
             };
 
-            const handleNext = () => {
-                if (session.currentIndex < 19) {
-                    setSession(s => ({ ...s, currentIndex: s.currentIndex + 1 }));
+            const check = () => {
+                const isCorrect = input.trim() === tasks[currentTask].a;
+                setFeedback(isCorrect ? 'correct' : 'wrong');
+                if(isCorrect) setScore(s => s + 1);
+            };
+
+            const next = () => {
+                if(currentTask < 19) {
+                    setCurrentTask(s => s + 1);
                     setFeedback(null);
-                    setUserInput('');
+                    setInput('');
                 } else {
-                    setUser(prev => ({ 
-                        ...prev, 
-                        progress: { ...prev.progress, [difficulty]: prev.progress[difficulty] + session.score } 
-                    }));
-                    setView('summary');
+                    setView('end');
                 }
             };
 
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6">
-                    <div className="w-full max-w-xl">
-                        
-                        {view === 'welcome' && (
-                            <div className="text-center space-y-8">
-                                <div className="bg-blue-600 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl rotate-3">
-                                    <Icon name="Binary" size={48} />
-                                </div>
-                                <h1 className="text-5xl font-black uppercase tracking-tighter">IT Trainer</h1>
-                                <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
-                                    <input 
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-2xl p-4 mb-4 text-center font-bold outline-none focus:border-blue-500"
-                                        placeholder="Dein Name..." value={user.name} onChange={e => setUser({...user, name: e.target.value})}
-                                    />
-                                    <button 
-                                        disabled={!user.name} onClick={() => setView('dashboard')}
-                                        className="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-30"
-                                    > Starten </button>
-                                </div>
-                            </div>
-                        )}
+            // Willkommens-Ansicht
+            if (view === 'welcome') {
+                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
+                    e('div', { className: "bg-blue-600 p-6 rounded-3xl mb-6 rotate-3 shadow-xl" }, e(Icon, { name: 'Binary', size: 48 })),
+                    e('h1', { className: "text-4xl font-black mb-8 uppercase tracking-tighter" }, "IT Trainer"),
+                    e('div', { className: "bg-card p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center" },
+                        e('input', { 
+                            className: "w-full bg-slate-950 border border-slate-700 rounded-2xl p-4 mb-4 text-center font-bold text-white outline-none focus:border-blue-500",
+                            placeholder: "Dein Name...", value: name, onChange: (ev) => setName(ev.target.value)
+                        }),
+                        e('button', { 
+                            disabled: !name, onClick: () => setView('menu'),
+                            className: "w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-30 transition-all shadow-lg"
+                        }, "Starten")
+                    )
+                );
+            }
 
-                        {view === 'dashboard' && (
-                            <div className="space-y-6 text-center">
-                                <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-black">{user.name}</h2>
-                                    <button onClick={() => setView('stats')} className="p-3 bg-slate-900 rounded-xl border border-slate-800"><Icon name="BarChart3" /></button>
-                                </div>
-                                <div onClick={() => setView('level-select')} className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 cursor-pointer hover:border-blue-500 transition-all group">
-                                    <div className="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                                        <Icon name="Hash" />
-                                    </div>
-                                    <h3 className="text-xl font-black uppercase">Zahlensysteme</h3>
-                                    <p className="text-slate-400 text-sm mt-2">Binär, Hex & Komplement Training</p>
-                                </div>
-                            </div>
-                        )}
+            // Menü-Ansicht
+            if (view === 'menu') {
+                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
+                    e('h2', { className: "text-2xl font-black mb-8 uppercase" }, `Hallo, ${name}`),
+                    e('div', { className: "grid gap-4 w-full max-w-sm" },
+                        ['G', 'M', 'E'].map(lvl => e('button', {
+                            key: lvl, onClick: () => generateTasks(lvl),
+                            className: "bg-card p-6 rounded-3xl border-l-8 border-blue-600 text-left font-black uppercase hover:bg-slate-800 transition-all flex justify-between"
+                        }, lvl === 'G' ? 'Grundlagen' : lvl === 'M' ? 'Mittelstufe' : 'Experte', e(Icon, { name: 'ChevronRight' })))
+                    )
+                );
+            }
 
-                        {view === 'level-select' && (
-                            <div className="space-y-4">
-                                <button onClick={() => setView('dashboard')} className="text-slate-500 font-bold text-xs uppercase mb-4 flex items-center gap-2"> <Icon name="ArrowLeft" size={16}/> Zurück</button>
-                                {['G', 'M', 'E'].map(lvl => (
-                                    <button key={lvl} onClick={() => startTraining(lvl)} className="w-full bg-slate-900 p-8 rounded-3xl border border-slate-800 text-left border-l-8 border-l-blue-600 hover:bg-slate-800 transition-all flex justify-between items-center">
-                                        <span className="text-xl font-black uppercase tracking-wide">{lvl === 'G' ? 'Grundlagen' : lvl === 'M' ? 'Mittelstufe' : 'Experte'}</span>
-                                        <Icon name="ChevronRight" />
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+            // Spiel-Ansicht
+            if (view === 'game') {
+                const task = tasks[currentTask];
+                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
+                    e('div', { className: "w-full max-w-md bg-card p-10 rounded-[3rem] shadow-2xl text-center border border-slate-800" },
+                        e('p', { className: "text-blue-500 text-[10px] font-black uppercase tracking-widest mb-4" }, task.label),
+                        e('div', { className: "text-5xl font-mono font-black mb-10 tracking-tighter" }, task.q),
+                        !feedback ? e('div', { className: "space-y-4" },
+                            e('input', { 
+                                className: "w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-5 text-3xl font-mono text-center outline-none focus:border-blue-500",
+                                value: input, onChange: (ev) => setInput(ev.target.value),
+                                onKeyDown: (ev) => ev.key === 'Enter' && check(), autoFocus: true
+                            }),
+                            e('button', { onClick: check, className: "w-full bg-blue-600 py-4 rounded-2xl font-black uppercase" }, "Prüfen")
+                        ) : e('div', { className: "space-y-6" },
+                            e('div', { className: `p-4 rounded-2xl font-black uppercase ${feedback === 'correct' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}` }, 
+                                feedback === 'correct' ? 'Richtig!' : `Falsch: ${task.a}`),
+                            e('button', { onClick: next, className: "w-full bg-white text-slate-950 py-4 rounded-2xl font-black uppercase flex items-center justify-center gap-2" }, "Weiter", e(Icon, { name: 'ChevronRight', size: 18 }))
+                        ),
+                        e('div', { className: "mt-8 text-[10px] text-slate-500 font-bold" }, `Aufgabe ${currentTask + 1} von 20`)
+                    )
+                );
+            }
 
-                        {view === 'exercise' && (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
-                                    <span>Aufgabe {session.currentIndex + 1} / 20</span>
-                                    <button onClick={() => setView('dashboard')}>Pause</button>
-                                </div>
-                                <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 text-center shadow-2xl">
-                                    <p className="text-blue-500 text-[10px] font-black uppercase tracking-widest mb-6">{session.tasks[session.currentIndex].label}</p>
-                                    <div className="text-5xl font-mono font-black mb-12">
-                                        {BINARY_LOGIC.formatBinary(session.tasks[session.currentIndex].question.toString())}
-                                    </div>
-
-                                    {!feedback ? (
-                                        <div className="space-y-4">
-                                            <input 
-                                                autoFocus className="w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-6 text-3xl font-mono text-center outline-none focus:border-blue-600"
-                                                value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCheck()}
-                                            />
-                                            <button onClick={handleCheck} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase">Prüfen</button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-6">
-                                            <div className={`p-6 rounded-2xl font-black uppercase flex items-center justify-center gap-4 ${feedback.correct ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                <Icon name={feedback.correct ? "CheckCircle2" : "XCircle"} />
-                                                {feedback.correct ? 'Richtig' : 'Falsch'}
-                                            </div>
-                                            {!feedback.correct && <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 font-mono text-xl tracking-widest">{BINARY_LOGIC.formatBinary(feedback.val)}</div>}
-                                            <button onClick={handleNext} className="w-full bg-white text-slate-950 py-5 rounded-2xl font-black uppercase flex items-center justify-center gap-2">Weiter <Icon name="ChevronRight" /></button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'summary' && (
-                            <div className="text-center space-y-8">
-                                <div className="bg-yellow-500 w-24 h-24 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/40">
-                                    <Icon name="Trophy" size={48} />
-                                </div>
-                                <h2 className="text-4xl font-black uppercase">Fertig!</h2>
-                                <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800">
-                                    <p className="text-slate-500 text-xs font-bold uppercase mb-2">Dein Score</p>
-                                    <div className="text-7xl font-black text-blue-500">{session.score} <span className="text-2xl text-slate-700">/ 20</span></div>
-                                </div>
-                                <button onClick={() => setView('dashboard')} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase">Dashboard</button>
-                            </div>
-                        )}
-
-                        {view === 'stats' && (
-                            <div className="space-y-6">
-                                <button onClick={() => setView('dashboard')} className="text-slate-500 font-bold text-xs uppercase mb-8 flex items-center gap-2"> <Icon name="ArrowLeft" size={16}/> Dashboard</button>
-                                <h2 className="text-3xl font-black uppercase mb-8">Statistiken</h2>
-                                {['G', 'M', 'E'].map(lvl => (
-                                    <div key={lvl} className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex justify-between items-center">
-                                        <span className="font-black uppercase text-slate-400">{lvl}-Niveau</span>
-                                        <span className="text-2xl font-black text-blue-500">{user.progress[lvl]} Pkt</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                    </div>
-                    <footer className="mt-20 opacity-20 text-[10px] font-black uppercase tracking-[0.5em]">© 2024 IT Trainer</footer>
-                </div>
-            );
+            // Ende-Ansicht
+            if (view === 'end') {
+                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
+                    e('div', { className: "bg-yellow-500 p-6 rounded-full mb-6 shadow-2xl" }, e(Icon, { name: 'Trophy', size: 48 })),
+                    e('h2', { className: "text-4xl font-black mb-2 uppercase" }, "Fertig!"),
+                    e('div', { className: "bg-card p-10 rounded-[2.5rem] text-center mb-8 w-full max-w-sm" },
+                        e('p', { className: "text-slate-500 text-xs font-bold uppercase mb-2" }, "Dein Ergebnis"),
+                        e('div', { className: "text-7xl font-black text-blue-500" }, `${score}/20`)
+                    ),
+                    e('button', { onClick: () => location.reload(), className: "bg-blue-600 px-10 py-4 rounded-2xl font-black uppercase" }, "Neustart")
+                );
+            }
         };
 
-        // Render-Vorgang
-        const rootElement = document.getElementById('root');
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(<App />);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(e(App));
     </script>
 </body>
 </html>
