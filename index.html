@@ -579,26 +579,29 @@
             }
             
             el.innerHTML = "";
+            
+            // Komprimiertes Payload-Objekt, um Überlauf-Fehler (1524 > 864) zu vermeiden
             const qrPayload = {
-                user: globalStats.username,
-                stats: {
+                u: globalStats.username, // u = User
+                s: { // s = Stats
                     G: globalStats.G.completed,
                     M: globalStats.M.completed,
                     E: globalStats.E.completed
                 },
-                acc: getCertificateData().accuracy,
-                ts: new Date().toISOString()
+                a: getCertificateData().accuracy, // a = Accuracy
+                t: Date.now() // t = Timestamp (Unix ist kürzer als ISO)
             };
 
             try {
                 // Initialisierung der qrcode.js Bibliothek
+                // Hinweis: Level 'L' (Low) bietet die größte Datenkapazität, falls nötig.
                 new QRCode(el, {
                     text: JSON.stringify(qrPayload),
                     width: 200,
                     height: 200,
                     colorDark : "#000000",
                     colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.M
+                    correctLevel : QRCode.CorrectLevel.L 
                 });
             } catch (err) {
                 el.innerHTML = "<p class='text-red-500 text-xs font-bold'>QR-Fehler</p>";
