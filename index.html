@@ -1,0 +1,489 @@
+import React, { useState, useCallback, useMemo } from 'react';
+import { 
+  Binary, 
+  Dices, 
+  QrCode, 
+  ChevronRight, 
+  ArrowLeft, 
+  CheckCircle2, 
+  XCircle, 
+  BarChart3, 
+  Info, 
+  Hash, 
+  Trophy, 
+  LayoutGrid,
+  Play
+} from 'lucide-react';
+
+/**
+ * IT Trainer - Lern-App für Informatik (Binärcode & Zahlensysteme)
+ * Optimiert für GitHub Upload: Modularer Aufbau & Clean Code.
+ */
+
+// --- KONSTANTEN & HELFER ---
+
+const BINARY_LOGIC = {
+  /**
+   * Formatiert Binärstrings in 4er-Blöcke (Nibbles) von rechts beginnend.
+   */
+  formatBinary: (binStr) => {
+    if (typeof binStr !== 'string' || !/^[01]+$/.test(binStr)) return binStr;
+    const reversed = binStr.split('').reverse().join('');
+    const chunks = reversed.match(/.{1,4}/g);
+    return chunks ? chunks.join(' ').split('').reverse().join('') : binStr;
+  },
+
+  /**
+   * Berechnet das 8-Bit Zweierkomplement für eine Dezimalzahl.
+   */
+  toTwosComplement: (decimal) => {
+    return (decimal < 0 ? (Math.pow(2, 8) + decimal) : decimal).toString(2).padStart(8, '0');
+  },
+
+  /**
+   * Generiert ein zufälliges Aufgaben-Set (20 Aufgaben).
+   */
+  createTasks: (diff) => {
+    const tasks = [];
+    const countPerType = 10;
+
+    for (let i = 0; i < countPerType * 2; i++) {
+      let decimal, question, answer, label;
+      const isReverse = i >= countPerType;
+
+      if (diff === 'G') {
+        decimal = Math.floor(Math.random() * 64);
+        const isBinToDec = isReverse;
+        question = isBinToDec ? decimal.toString(2).padStart(6, '0') : decimal;
+        answer = isBinToDec ? decimal.toString() : decimal.toString(2).padStart(6, '0');
+        label = isBinToDec ? 'Binär → Dezimal' : 'Dezimal → Binär (6 Bit)';
+      } 
+      else if (diff === 'M') {
+        decimal = Math.floor(Math.random() * 256);
+        const isBinToDec = isReverse;
+        question = isBinToDec ? decimal.toString(2).padStart(8, '0') : decimal;
+        answer = isBinToDec ? decimal.toString() : decimal.toString(2).padStart(8, '0');
+        label = isBinToDec ? 'Binär → Dezimal' : 'Dezimal → Binär (8 Bit)';
+      } 
+      else {
+        // E-Niveau: Mixed Modes
+        const mode = Math.random();
+        if (mode < 0.4) {
+          decimal = Math.floor(Math.random() * 4096);
+          const isBinToDec = isReverse;
+          question = isBinToDec ? decimal.toString(2).padStart(12, '0') : decimal;
+          answer = isBinToDec ? decimal.toString() : decimal.toString(2).padStart(12, '0');
+          label = isBinToDec ? 'Binär → Dezimal (12 Bit)' : 'Dezimal → Binär (12 Bit)';
+        } else if (mode < 0.7) {
+          decimal = Math.floor(Math.random() * 256);
+          const isHexToDec = isReverse;
+          question = isHexToDec ? decimal.toString(16).toUpperCase() : decimal;
+          answer = isHexToDec ? decimal.toString() : decimal.toString(16).toUpperCase();
+          label = isHexToDec ? 'Hexadezimal → Dezimal' : 'Dezimal → Hexadezimal';
+        } else {
+          decimal = Math.floor(Math.random() * 256) - 128;
+          const isCompToDec = isReverse;
+          const bit8 = BINARY_LOGIC.toTwosComplement(decimal);
+          question = isCompToDec ? bit8 : decimal;
+          answer = isCompToDec ? decimal.toString() : bit8;
+          label = isCompToDec ? 'Zweierkomplement → Dezimal' : 'Dezimal → Zweierkomplement';
+        }
+      }
+      tasks.push({ question, answer, label });
+    }
+    return tasks.sort(() => Math.random() - 0.5);
+  }
+};
+
+const App = () => {
+  // --- STATE ---
+  const [view, setView] = useState('welcome');
+  const [user, setUser] = useState({ name: '', progress: { G: 0, M: 0, E: 0 } });
+  const [difficulty, setDifficulty] = useState('G');
+  const [session, setSession] = useState({
+    tasks: [],
+    currentIndex: 0,
+    score: 0,
+    isActive: false
+  });
+  const [userInput, setUserInput] = useState('');
+  const [feedback, setFeedback] = useState(null);
+
+  // --- HANDLER ---
+
+  const generateRandomName = useCallback(() => {
+    const adjectives = ['Binärer', 'Logischer', 'Digitaler', 'Vernetzter', 'Bit-Schiebender', 'Kodierender'];
+    const nouns = ['Bot', 'Cursor', 'Pixel', 'Kernel', 'Algo', 'Byte'];
+    const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
+    setUser(prev => ({ ...prev, name }));
+  }, []);
+
+  const startTraining = (lvl) => {
+    setDifficulty(lvl);
+    const tasks = BINARY_LOGIC.createTasks(lvl);
+    setSession({ tasks, currentIndex: 0, score: 0, isActive: true });
+    setFeedback(null);
+    setUserInput('');
+    setView('exercise');
+  };
+
+  const checkAnswer = () => {
+    const current = session.tasks[session.currentIndex];
+    const cleanInput = userInput.trim().replace(/\s+/g, '').toUpperCase();
+    const cleanAnswer = current.answer.replace(/\s+/g, '').toUpperCase();
+    
+    const isCorrect = cleanInput === cleanAnswer;
+    
+    setFeedback({
+      correct: isCorrect,
+      correctAnswer: current.answer
+    });
+
+    if (isCorrect) {
+      setSession(s => ({ ...s, score: s.score + 1 }));
+    }
+  };
+
+  const nextTask = () => {
+    if (session.currentIndex < session.tasks.length - 1) {
+      setSession(s => ({ ...s, currentIndex: s.currentIndex + 1 }));
+      setFeedback(null);
+      setUserInput('');
+    } else {
+      setUser(prev => ({
+        ...prev,
+        progress: {
+          ...prev.progress,
+          [difficulty]: prev.progress[difficulty] + session.score
+        }
+      }));
+      setSession(s => ({ ...s, isActive: false }));
+      setView('summary');
+    }
+  };
+
+  const qrUrl = useMemo(() => {
+    const data = JSON.stringify({ n: user.name, p: user.progress });
+    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}&bgcolor=0f172a&color=f8fafc`;
+  }, [user]);
+
+  // --- UI COMPONENTS ---
+
+  const renderWelcome = () => (
+    <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in duration-700">
+      <div className="inline-flex p-5 bg-blue-600 rounded-[2rem] shadow-2xl shadow-blue-600/30 mb-8">
+        <Binary size={48} className="text-white" />
+      </div>
+      <h1 className="text-5xl font-black text-white mb-4 tracking-tighter uppercase">IT TRAINER</h1>
+      <p className="text-slate-400 mb-10 text-lg">Werde zum Master der Nullen und Einsen.</p>
+      
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl">
+        <div className="flex gap-2 mb-6">
+          <input 
+            type="text" 
+            value={user.name}
+            onChange={(e) => setUser({...user, name: e.target.value})}
+            placeholder="Dein Name..."
+            className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-inner"
+          />
+          <button 
+            onClick={generateRandomName} 
+            className="p-4 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 transition-colors"
+            aria-label="Zufälliger Name"
+          >
+            <Dices size={24} />
+          </button>
+        </div>
+        <button 
+          disabled={!user.name}
+          onClick={() => setView('dashboard')}
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-30 py-5 rounded-2xl font-bold text-white shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
+        >
+          Lernumgebung betreten <ChevronRight size={20} />
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDashboard = () => (
+    <div className="max-w-4xl mx-auto py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <header className="flex justify-between items-center mb-12 px-2">
+        <div>
+          <h2 className="text-3xl font-bold text-white uppercase tracking-tight">Dashboard</h2>
+          <p className="text-slate-500 font-medium">Bereit für die nächste Session, {user.name}?</p>
+        </div>
+        <button 
+          onClick={() => setView('stats')} 
+          className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all shadow-lg active:scale-95"
+          aria-label="Statistiken"
+        >
+          <BarChart3 size={24} />
+        </button>
+      </header>
+
+      {session.isActive && (
+        <div className="mb-10 p-6 bg-blue-600/10 border border-blue-500/20 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg shadow-blue-600/5">
+          <div className="flex items-center gap-4 text-left">
+            <div className="bg-blue-600 p-3 rounded-xl text-white">
+              <Play size={24} fill="currentColor" />
+            </div>
+            <div>
+              <h4 className="font-bold text-white">Laufende Übung</h4>
+              <p className="text-slate-400 text-sm">Aufgabe {session.currentIndex + 1} / {session.tasks.length} ({difficulty}-Niveau)</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setView('exercise')}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+          >
+            Fortsetzen
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div 
+          onClick={() => setView('level-select')}
+          className="group bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] hover:border-blue-500/50 cursor-pointer transition-all relative overflow-hidden shadow-xl"
+        >
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Binary size={120} />
+          </div>
+          <div className="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-600/20 text-white">
+            <Hash size={28} />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-2">Binär & Zahlensysteme</h3>
+          <p className="text-slate-400 mb-6 leading-relaxed text-sm">Basis-Umrechnungen und vertiefte Konzepte wie Zweierkomplement.</p>
+          <span className="inline-flex items-center gap-2 text-blue-400 font-bold uppercase tracking-widest text-xs">
+            {session.isActive ? 'Neue Runde' : 'Jetzt Starten'} <ChevronRight size={14} />
+          </span>
+        </div>
+
+        <div className="bg-slate-900/40 border border-dashed border-slate-800 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-700">
+          <LayoutGrid size={40} className="mb-4 opacity-10" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 text-center">Inhaltserweiterung folgt</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderLevelSelect = () => (
+    <div className="max-w-3xl mx-auto py-12 animate-in slide-in-from-right-8 duration-500">
+      <button onClick={() => setView('dashboard')} className="mb-10 flex items-center gap-2 text-slate-500 hover:text-white transition-colors font-bold uppercase text-xs tracking-widest">
+        <ArrowLeft size={18} /> Zurück
+      </button>
+      
+      <h2 className="text-4xl font-black text-white mb-2 tracking-tight">WÄHLE DEIN NIVEAU</h2>
+      <p className="text-slate-500 mb-10 text-lg">Jede Übung umfasst 20 Aufgaben.</p>
+
+      <div className="grid gap-4">
+        {[
+          { id: 'G', title: 'Grundlegend (G)', desc: 'Zahlen bis 63. Inklusive Stellenwert-Hilfstabelle.', color: 'blue' },
+          { id: 'M', title: 'Mittler (M)', desc: 'Zahlen bis 255 (8 Bit). Ohne Hilfsmittel.', color: 'purple' },
+          { id: 'E', title: 'Erweitert (E)', desc: '12-Bit Werte, Hexadezimal & Zweierkomplement.', color: 'emerald' }
+        ].map(lvl => (
+          <button 
+            key={lvl.id}
+            onClick={() => startTraining(lvl.id)}
+            className={`flex items-center justify-between p-8 bg-slate-900 border border-slate-800 rounded-[2rem] hover:bg-slate-800 transition-all text-left border-l-[12px] shadow-lg ${
+              lvl.id === 'G' ? 'border-l-blue-600' : lvl.id === 'M' ? 'border-l-purple-600' : 'border-l-emerald-600'
+            }`}
+          >
+            <div>
+              <h4 className="text-2xl font-bold text-white mb-1">{lvl.title}</h4>
+              <p className="text-slate-500 text-sm max-w-md">{lvl.desc}</p>
+            </div>
+            <div className={`p-4 rounded-full bg-slate-950/50 text-slate-400 group-hover:text-white transition-colors`}>
+              <ChevronRight size={24} />
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderExercise = () => {
+    const current = session.tasks[session.currentIndex];
+    const progress = ((session.currentIndex + 1) / session.tasks.length) * 100;
+
+    return (
+      <div className="max-w-3xl mx-auto py-4">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setView('dashboard')}
+              className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 active:scale-95"
+              aria-label="Übung pausieren"
+            >
+              <ArrowLeft size={20} />
+              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Pause</span>
+            </button>
+            <span className="text-slate-500 font-bold text-xs uppercase tracking-widest ml-2">{difficulty}-NIVEAU</span>
+          </div>
+          <span className="text-slate-500 font-mono text-xs font-bold">{session.currentIndex + 1} / {session.tasks.length}</span>
+        </div>
+        
+        <div className="w-full bg-slate-900 h-2.5 rounded-full mb-8 overflow-hidden border border-slate-800 shadow-inner">
+          <div 
+            className="h-full bg-blue-600 transition-all duration-700 shadow-[0_0_15px_rgba(37,99,235,0.4)]" 
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-[3rem] p-12 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
+          <div className="absolute top-0 right-0 p-8 text-slate-950 opacity-20">
+            <Binary size={140} />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="mb-4">
+              <span className="bg-blue-600/10 text-blue-400 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-block border border-blue-500/20">
+                {current.label}
+              </span>
+            </div>
+            
+            <div className="text-6xl font-mono font-black text-white mb-12 break-all drop-shadow-xl tracking-tight leading-tight">
+              {BINARY_LOGIC.formatBinary(String(current.question))}
+            </div>
+
+            {!feedback ? (
+              <div className="space-y-6">
+                <input 
+                  type="text"
+                  value={userInput}
+                  autoFocus
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && checkAnswer()}
+                  className="w-full bg-slate-950 border-2 border-slate-800 rounded-[1.5rem] px-6 py-6 text-4xl font-mono text-center focus:border-blue-600 outline-none transition-all text-white shadow-2xl"
+                  placeholder="?"
+                />
+                <p className="text-center text-slate-600 text-[10px] font-black uppercase tracking-widest">Tipp: Leerzeichen werden automatisch entfernt.</p>
+                <button 
+                  onClick={checkAnswer}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-6 rounded-2xl shadow-xl shadow-blue-600/20 text-xl transition-all active:scale-[0.98] uppercase tracking-widest"
+                >
+                  Bestätigen
+                </button>
+              </div>
+            ) : (
+              <div className={`p-10 rounded-[2.5rem] border-2 animate-in fade-in zoom-in duration-300 ${feedback.correct ? 'bg-emerald-500/5 border-emerald-500/30 shadow-emerald-500/10' : 'bg-red-500/5 border-red-500/30 shadow-red-500/10'} shadow-2xl`}>
+                <div className="flex items-center gap-4 mb-6">
+                  {feedback.correct ? <CheckCircle2 className="text-emerald-500" size={36} /> : <XCircle className="text-red-500" size={36} />}
+                  <h4 className={`text-3xl font-black ${feedback.correct ? 'text-emerald-400' : 'text-red-400'} uppercase tracking-tighter`}>
+                    {feedback.correct ? 'KORREKT!' : 'NICHT GANZ...'}
+                  </h4>
+                </div>
+                {!feedback.correct && (
+                  <p className="text-slate-400 text-lg mb-8 leading-relaxed font-medium">Die richtige Lösung lautet: <br/>
+                    <span className="font-mono font-black text-white text-4xl mt-2 block tracking-wider">
+                      {BINARY_LOGIC.formatBinary(String(feedback.correctAnswer))}
+                    </span>
+                  </p>
+                )}
+                <button 
+                  onClick={nextTask}
+                  className="w-full bg-slate-100 hover:bg-white text-slate-950 font-black py-5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl uppercase tracking-widest"
+                >
+                  {session.currentIndex === session.tasks.length - 1 ? 'Auswertung' : 'Weiter'} <ChevronRight size={20} />
+                </button>
+              </div>
+            )}
+
+            {difficulty === 'G' && (
+              <div className="mt-12 bg-blue-900/10 rounded-[1.5rem] p-6 border border-blue-500/20 shadow-inner">
+                <div className="flex items-center gap-2 mb-4 text-blue-400/80">
+                  <Info size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Stellenwert-Hilfe (G)</span>
+                </div>
+                <div className="grid grid-cols-6 gap-3">
+                  {[32, 16, 8, 4, 2, 1].map((val, i) => (
+                    <div key={val} className="text-center p-3 rounded-xl bg-slate-950/50 border border-slate-800 shadow-sm">
+                      <div className="text-[10px] text-slate-600 font-mono mb-1">2^{5-i}</div>
+                      <div className="text-lg font-black text-blue-300">{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSummary = () => (
+    <div className="max-w-xl mx-auto py-12 flex flex-col items-center justify-center text-center animate-in zoom-in duration-700">
+      <div className="w-24 h-24 bg-yellow-500 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-yellow-500/40 animate-bounce">
+        <Trophy size={48} className="text-white" />
+      </div>
+      <h2 className="text-4xl font-black text-white mb-2 tracking-tight uppercase">ABGESCHLOSSEN!</h2>
+      <p className="text-slate-500 mb-10 text-lg">Hervorragende Leistung auf dem {difficulty}-Niveau.</p>
+
+      <div className="bg-slate-900 border border-slate-800 p-10 rounded-[3rem] w-full mb-10 shadow-2xl border-t-blue-600 border-t-8">
+        <div className="text-slate-600 font-black uppercase tracking-[0.3em] text-[10px] mb-4">Statistik</div>
+        <div className="text-8xl font-black text-blue-500 mb-2 drop-shadow-2xl">{session.score}<span className="text-3xl text-slate-700">/{session.tasks.length}</span></div>
+        <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-4">Korrekt gelöst</p>
+      </div>
+
+      <button 
+        onClick={() => setView('dashboard')}
+        className="bg-blue-600 hover:bg-blue-500 text-white font-black px-12 py-5 rounded-2xl transition-all shadow-xl shadow-blue-600/20 active:scale-95 uppercase tracking-widest"
+      >
+        Dashboard
+      </button>
+    </div>
+  );
+
+  const renderStats = () => (
+    <div className="max-w-xl mx-auto py-12 flex flex-col items-center animate-in slide-in-from-top-8 duration-500">
+      <button onClick={() => setView('dashboard')} className="self-start flex items-center gap-2 text-slate-500 hover:text-white mb-12 transition-colors font-bold uppercase text-xs tracking-widest">
+        <ArrowLeft size={18} /> Zurück
+      </button>
+
+      <h2 className="text-4xl font-black text-white mb-10 uppercase tracking-tight">PROGRESS</h2>
+
+      <div className="w-full grid grid-cols-1 gap-4 mb-12">
+        {['G', 'M', 'E'].map(lvl => (
+          <div key={lvl} className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] flex justify-between items-center relative overflow-hidden shadow-xl">
+             <div className={`absolute left-0 top-0 bottom-0 w-3 ${lvl === 'G' ? 'bg-blue-500' : lvl === 'M' ? 'bg-purple-500' : 'bg-emerald-500'}`}></div>
+             <span className="text-2xl font-black text-white ml-2">{lvl}-Niveau</span>
+             <div className="text-right">
+               <div className="text-3xl font-mono font-black text-blue-400 leading-none">{user.progress[lvl]}</div>
+               <div className="text-[10px] text-slate-600 uppercase font-black tracking-widest mt-1">Punkte</div>
+             </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white p-6 rounded-[3rem] shadow-2xl shadow-blue-500/10 mb-8 border-[16px] border-slate-900 group hover:scale-105 transition-transform duration-500">
+        <img src={qrUrl} alt="QR-Code Fortschritt" className="w-48 h-48" />
+      </div>
+      <p className="text-slate-500 text-xs text-center px-12 leading-relaxed font-bold uppercase tracking-widest opacity-60">
+        QR scannen, um Fortschritt auf andere Geräte zu übertragen.
+      </p>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 overflow-x-hidden relative flex flex-col">
+      {/* BACKGROUND DECORATION */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-transparent pointer-events-none"></div>
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-purple-900/5 via-transparent to-transparent pointer-events-none"></div>
+
+      <main className="relative z-10 px-6 flex-1 flex flex-col">
+        {view === 'welcome' && renderWelcome()}
+        {view === 'dashboard' && renderDashboard()}
+        {view === 'level-select' && renderLevelSelect()}
+        {view === 'exercise' && renderExercise()}
+        {view === 'summary' && renderSummary()}
+        {view === 'stats' && renderStats()}
+      </main>
+
+      <footer className="relative z-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.4em] text-slate-700">
+        © 2024 IT Trainer Open Source Project
+      </footer>
+    </div>
+  );
+};
+
+export default App;
