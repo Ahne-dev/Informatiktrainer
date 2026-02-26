@@ -2,148 +2,134 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT Trainer - Zahlensysteme</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #020617; color: white; margin: 0; }
-        .bg-card { background-color: #0f172a; border: 1px solid #1e293b; }
+        body { background-color: #020617; color: white; font-family: sans-serif; }
+        .card { background-color: #0f172a; border: 1px solid #1e293b; border-radius: 2rem; padding: 2rem; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script>
-        const e = React.createElement;
-        const { useState, useEffect } = React;
+        const h = React.createElement;
 
-        // Icon-Komponente ohne JSX
-        const Icon = ({ name, size = 24, className = "" }) => {
-            const [svg, setSvg] = useState("");
-            useEffect(() => {
-                if (window.lucide && window.lucide.icons[name]) {
-                    setSvg(window.lucide.icons[name].toSvg({ width: size, height: size, class: className, 'stroke-width': 2 }));
-                }
-            }, [name]);
-            return e('span', { dangerouslySetInnerHTML: { __html: svg }, className: "inline-flex items-center justify-center" });
-        };
+        function App() {
+            const [view, setView] = React.useState('start');
+            const [name, setName] = React.useState('');
+            const [score, setScore] = React.useState(0);
+            const [taskIdx, setTaskIdx] = React.useState(0);
+            const [tasks, setTasks] = React.useState([]);
+            const [input, setInput] = React.useState('');
+            const [solved, setSolved] = React.useState(false);
 
-        const App = () => {
-            const [view, setView] = useState('welcome');
-            const [name, setName] = useState('');
-            const [score, setScore] = useState(0);
-            const [currentTask, setCurrentTask] = useState(0);
-            const [difficulty, setDifficulty] = useState('G');
-            const [tasks, setTasks] = useState([]);
-            const [input, setInput] = useState('');
-            const [feedback, setFeedback] = useState(null);
-
-            const generateTasks = (diff) => {
-                let newTasks = [];
+            function start(diff) {
+                const t = [];
                 for(let i=0; i<20; i++) {
-                    let dec = Math.floor(Math.random() * (diff === 'G' ? 64 : 256));
-                    newTasks.push({
-                        q: i < 10 ? dec : dec.toString(2).padStart(diff === 'G' ? 6 : 8, '0'),
-                        a: i < 10 ? dec.toString(2).padStart(diff === 'G' ? 6 : 8, '0') : dec.toString(),
-                        label: i < 10 ? 'Dezimal → Binär' : 'Binär → Dezimal'
+                    const dec = Math.floor(Math.random() * (diff === 'G' ? 64 : 255));
+                    t.push({
+                        q: i < 10 ? dec : dec.toString(2).padStart(8, '0'),
+                        a: i < 10 ? dec.toString(2).padStart(8, '0') : dec.toString(),
+                        label: i < 10 ? "Dezimal -> Binär" : "Binär -> Dezimal"
                     });
                 }
-                setTasks(newTasks.sort(() => Math.random() - 0.5));
-                setDifficulty(diff);
+                setTasks(t);
                 setView('game');
-            };
+            }
 
-            const check = () => {
-                const isCorrect = input.trim() === tasks[currentTask].a;
-                setFeedback(isCorrect ? 'correct' : 'wrong');
-                if(isCorrect) setScore(s => s + 1);
-            };
-
-            const next = () => {
-                if(currentTask < 19) {
-                    setCurrentTask(s => s + 1);
-                    setFeedback(null);
-                    setInput('');
-                } else {
-                    setView('end');
-                }
-            };
-
-            // Willkommens-Ansicht
-            if (view === 'welcome') {
-                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
-                    e('div', { className: "bg-blue-600 p-6 rounded-3xl mb-6 rotate-3 shadow-xl" }, e(Icon, { name: 'Binary', size: 48 })),
-                    e('h1', { className: "text-4xl font-black mb-8 uppercase tracking-tighter" }, "IT Trainer"),
-                    e('div', { className: "bg-card p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center" },
-                        e('input', { 
-                            className: "w-full bg-slate-950 border border-slate-700 rounded-2xl p-4 mb-4 text-center font-bold text-white outline-none focus:border-blue-500",
-                            placeholder: "Dein Name...", value: name, onChange: (ev) => setName(ev.target.value)
+            if (view === 'start') {
+                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen p-4'},
+                    h('h1', {className: 'text-4xl font-black mb-8'}, 'IT TRAINER'),
+                    h('div', {className: 'card w-full max-w-sm text-center'},
+                        h('input', {
+                            className: 'w-full p-4 rounded-xl bg-slate-900 border border-slate-700 mb-4 text-center',
+                            placeholder: 'Dein Name',
+                            value: name,
+                            onChange: e => setName(e.target.value)
                         }),
-                        e('button', { 
-                            disabled: !name, onClick: () => setView('menu'),
-                            className: "w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-30 transition-all shadow-lg"
-                        }, "Starten")
+                        h('button', {
+                            className: 'w-full bg-blue-600 p-4 rounded-xl font-bold uppercase',
+                            onClick: () => setView('menu'),
+                            disabled: !name
+                        }, 'Starten')
                     )
                 );
             }
 
-            // Menü-Ansicht
             if (view === 'menu') {
-                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
-                    e('h2', { className: "text-2xl font-black mb-8 uppercase" }, `Hallo, ${name}`),
-                    e('div', { className: "grid gap-4 w-full max-w-sm" },
-                        ['G', 'M', 'E'].map(lvl => e('button', {
-                            key: lvl, onClick: () => generateTasks(lvl),
-                            className: "bg-card p-6 rounded-3xl border-l-8 border-blue-600 text-left font-black uppercase hover:bg-slate-800 transition-all flex justify-between"
-                        }, lvl === 'G' ? 'Grundlagen' : lvl === 'M' ? 'Mittelstufe' : 'Experte', e(Icon, { name: 'ChevronRight' })))
+                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen p-4'},
+                    h('h2', {className: 'text-2xl mb-8 font-bold text-blue-400'}, 'Niveau wählen:'),
+                    h('div', {className: 'space-y-4 w-full max-w-sm'},
+                        ['G', 'M', 'E'].map(l => h('button', {
+                            key: l,
+                            className: 'w-full bg-slate-800 p-6 rounded-2xl border-l-4 border-blue-500 text-left font-bold',
+                            onClick: () => start(l)
+                        }, l === 'G' ? 'Grundlagen (6-Bit)' : 'Mittelstufe (8-Bit)'))
                     )
                 );
             }
 
-            // Spiel-Ansicht
             if (view === 'game') {
-                const task = tasks[currentTask];
-                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
-                    e('div', { className: "w-full max-w-md bg-card p-10 rounded-[3rem] shadow-2xl text-center border border-slate-800" },
-                        e('p', { className: "text-blue-500 text-[10px] font-black uppercase tracking-widest mb-4" }, task.label),
-                        e('div', { className: "text-5xl font-mono font-black mb-10 tracking-tighter" }, task.q),
-                        !feedback ? e('div', { className: "space-y-4" },
-                            e('input', { 
-                                className: "w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-5 text-3xl font-mono text-center outline-none focus:border-blue-500",
-                                value: input, onChange: (ev) => setInput(ev.target.value),
-                                onKeyDown: (ev) => ev.key === 'Enter' && check(), autoFocus: true
+                const curr = tasks[taskIdx];
+                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen p-4'},
+                    h('div', {className: 'card w-full max-w-md text-center shadow-2xl'},
+                        h('p', {className: 'text-blue-500 font-bold mb-2'}, curr.label),
+                        h('div', {className: 'text-6xl font-mono font-black mb-8'}, curr.q),
+                        !solved ? h('div', null, 
+                            h('input', {
+                                className: 'w-full p-6 bg-slate-950 border-2 border-slate-700 rounded-xl text-3xl text-center mb-4',
+                                value: input,
+                                onChange: e => setInput(e.target.value),
+                                autoFocus: true
                             }),
-                            e('button', { onClick: check, className: "w-full bg-blue-600 py-4 rounded-2xl font-black uppercase" }, "Prüfen")
-                        ) : e('div', { className: "space-y-6" },
-                            e('div', { className: `p-4 rounded-2xl font-black uppercase ${feedback === 'correct' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}` }, 
-                                feedback === 'correct' ? 'Richtig!' : `Falsch: ${task.a}`),
-                            e('button', { onClick: next, className: "w-full bg-white text-slate-950 py-4 rounded-2xl font-black uppercase flex items-center justify-center gap-2" }, "Weiter", e(Icon, { name: 'ChevronRight', size: 18 }))
-                        ),
-                        e('div', { className: "mt-8 text-[10px] text-slate-500 font-bold" }, `Aufgabe ${currentTask + 1} von 20`)
+                            h('button', {
+                                className: 'w-full bg-blue-600 p-4 rounded-xl font-bold',
+                                onClick: () => {
+                                    if(input.trim() === curr.a) setScore(s => s+1);
+                                    setSolved(true);
+                                }
+                            }, 'Prüfen')
+                        ) : h('div', null,
+                            h('div', {className: 'p-4 rounded-xl mb-4 ' + (input.trim() === curr.a ? 'bg-green-900' : 'bg-red-900')}, 
+                                input.trim() === curr.a ? 'Richtig!' : 'Falsch! Lösung: ' + curr.a
+                            ),
+                            h('button', {
+                                className: 'w-full bg-white text-black p-4 rounded-xl font-bold',
+                                onClick: () => {
+                                    if(taskIdx < 19) {
+                                        setTaskIdx(taskIdx + 1);
+                                        setSolved(false);
+                                        setInput('');
+                                    } else {
+                                        setView('end');
+                                    }
+                                }
+                            }, 'Weiter')
+                        )
                     )
                 );
             }
 
-            // Ende-Ansicht
             if (view === 'end') {
-                return e('div', { className: "min-h-screen flex flex-col items-center justify-center p-6" },
-                    e('div', { className: "bg-yellow-500 p-6 rounded-full mb-6 shadow-2xl" }, e(Icon, { name: 'Trophy', size: 48 })),
-                    e('h2', { className: "text-4xl font-black mb-2 uppercase" }, "Fertig!"),
-                    e('div', { className: "bg-card p-10 rounded-[2.5rem] text-center mb-8 w-full max-w-sm" },
-                        e('p', { className: "text-slate-500 text-xs font-bold uppercase mb-2" }, "Dein Ergebnis"),
-                        e('div', { className: "text-7xl font-black text-blue-500" }, `${score}/20`)
+                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen'},
+                    h('h1', {className: 'text-5xl font-black mb-4'}, 'FERTIG!'),
+                    h('div', {className: 'card text-center'},
+                        h('p', null, 'Dein Ergebnis:'),
+                        h('div', {className: 'text-6xl font-bold text-blue-500'}, score + ' / 20')
                     ),
-                    e('button', { onClick: () => location.reload(), className: "bg-blue-600 px-10 py-4 rounded-2xl font-black uppercase" }, "Neustart")
+                    h('button', {
+                        className: 'mt-8 text-blue-400 font-bold',
+                        onClick: () => location.reload()
+                    }, 'Nochmal spielen')
                 );
             }
-        };
+        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(e(App));
+        root.render(h(App));
     </script>
 </body>
 </html>
