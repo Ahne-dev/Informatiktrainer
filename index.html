@@ -61,7 +61,16 @@
             box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
         }
 
-        /* Druck-Layout Spezifikationen */
+        .sidebar-transition {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #qrcode img {
+            margin: 0 auto;
+            border: 10px solid white;
+            border-radius: 1.5rem;
+        }
+
         @media print {
             @page {
                 size: A4;
@@ -87,19 +96,16 @@
                 padding: 0 !important; 
                 background: white !important;
             }
-            /* Das eigentliche Druck-Formular */
             #printable-certificate {
                 display: block !important;
                 color: black !important;
                 font-family: Arial, sans-serif;
             }
-            /* Die App-Ansicht beim Drucken verstecken */
             #app-certificate-view {
                 display: none !important;
             }
         }
 
-        /* Standardmäßig ist das Druck-Formular in der App unsichtbar */
         #printable-certificate {
             display: none;
         }
@@ -231,11 +237,8 @@
 
     <script>
         // Persistence & State
-        let practiceState = {
-            level: '', currentTask: 0, correctCount: 0,
-            totalTasks: 20, expectedAnswer: '', isActive: false,
-            taskStartTime: 0, totalSessionTime: 0
-        };
+        let activeLevel = null;
+        let practiceSessions = { G: null, M: null, E: null };
 
         const defaultStats = {
             username: '',
@@ -259,8 +262,14 @@
             loadContent('welcome');
         }
 
-        function saveSession() {
-            localStorage.setItem('infoLernSession', JSON.stringify(practiceState));
+        // Sitzungen laden
+        const savedSessions = JSON.parse(localStorage.getItem('infoLernSessions'));
+        if (savedSessions) {
+            practiceSessions = savedSessions;
+        }
+
+        function saveAllSessions() {
+            localStorage.setItem('infoLernSessions', JSON.stringify(practiceSessions));
             updateSidebarStatus();
         }
 
@@ -276,7 +285,8 @@
 
         function updateSidebarStatus() {
             const statusEl = document.getElementById('sidebar-stats');
-            if (practiceState.isActive) {
+            const anyActive = Object.values(practiceSessions).some(s => s && s.isActive);
+            if (anyActive) {
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-500 mr-2 animate-ping"></span><span class="text-purple-500">Training läuft</span>`;
             } else {
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>Status: Bereit`;
@@ -296,9 +306,7 @@
 
         function getCertificateData() {
             const all = ['G', 'M', 'E'];
-            let totalCorrect = 0;
-            let totalTasks = 0;
-            let totalTime = 0;
+            let totalCorrect = 0, totalTasks = 0, totalTime = 0;
             
             all.forEach(l => {
                 totalCorrect += globalStats[l].totalCorrect || 0;
@@ -377,31 +385,32 @@
                 <button onclick="loadContent('welcome')" class="mt-12 px-10 py-5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-black rounded-3xl">Menü</button>
             `,
             practice: () => {
-                let resumeBtn = practiceState.isActive ? `
-                    <button onclick="renderTask()" class="w-full mb-10 p-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-4xl flex items-center justify-between group shadow-lg">
-                        <div class="text-left"><span class="text-[11px] font-black uppercase opacity-80 block mb-1">Fortsetzen</span><h4 class="text-2xl font-black">${practiceState.level}-Niveau &bull; Aufgabe ${practiceState.currentTask}</h4></div>
-                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><i class="fas fa-play"></i></div>
-                    </button>
-                ` : "";
+                const renderLevelCard = (lvl, color, bits, range) => {
+                    const session = practiceSessions[lvl];
+                    const isActive = session && session.isActive;
+                    const bgClass = isActive ? `bg-${color}-500 text-white shadow-lg scale-[1.03]` : `bg-${color}-50/50 dark:bg-${color}-900/10 border border-${color}-100 dark:border-${color}-800/30`;
+                    const action = isActive ? `Fortsetzen (${session.currentTask}/20)` : 'Neu starten';
+                    
+                    return `
+                    <div onclick="startOrResumePractice('${lvl}')" class="p-8 ${bgClass} rounded-4xl cursor-pointer hover:scale-[1.03] transition-all relative overflow-hidden group">
+                        <span class="px-3 py-1 bg-${color}-500 text-white text-[10px] font-black rounded-lg uppercase border border-white/20">${lvl}-Niveau</span>
+                        <h4 class="text-xl font-black mt-6 tracking-tight ${isActive ? 'text-white' : 'dark:text-white'}">${range}</h4>
+                        <p class="text-sm ${isActive ? 'text-white/80' : 'text-slate-500'} mt-2">${bits} Bit</p>
+                        <div class="mt-6 font-black text-xs uppercase tracking-widest flex items-center">
+                            ${action} <i class="fas fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>`;
+                };
+
                 return `
                 <h1 class="text-4xl font-black mb-10 dark:text-white tracking-tighter">Trainings-Zentrum</h1>
-                ${resumeBtn}
+                <p class="text-slate-500 dark:text-slate-400 font-medium mb-10 max-w-2xl">
+                    Jede Sitzung wird pro Niveau einzeln gespeichert. Du kannst jederzeit zwischen den Niveaus wechseln, ohne deinen Fortschritt zu verlieren.
+                </p>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div onclick="startPractice('G')" class="p-8 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-4xl cursor-pointer hover:scale-[1.03] transition-all">
-                        <span class="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg uppercase">G-Niveau</span>
-                        <h4 class="text-xl font-black mt-6 dark:text-white tracking-tight">Einstieg</h4>
-                        <p class="text-sm text-slate-500 mt-2">6 Bit bis 63</p>
-                    </div>
-                    <div onclick="startPractice('M')" class="p-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-4xl cursor-pointer hover:scale-[1.03] transition-all">
-                        <span class="px-3 py-1 bg-blue-500 text-white text-[10px] font-black rounded-lg uppercase">M-Niveau</span>
-                        <h4 class="text-xl font-black mt-6 dark:text-white tracking-tight">Standard</h4>
-                        <p class="text-sm text-slate-500 mt-2">8 Bit bis 255</p>
-                    </div>
-                    <div onclick="startPractice('E')" class="p-8 bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-4xl cursor-pointer hover:scale-[1.03] transition-all">
-                        <span class="px-3 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg uppercase">E-Niveau</span>
-                        <h4 class="text-xl font-black mt-6 dark:text-white tracking-tight">Experte</h4>
-                        <p class="text-sm text-slate-500 mt-2">10 Bit bis 1023</p>
-                    </div>
+                    ${renderLevelCard('G', 'emerald', '6', 'Basis (0-63)')}
+                    ${renderLevelCard('M', 'blue', '8', 'Mittel (0-255)')}
+                    ${renderLevelCard('E', 'rose', '10', 'Profi (0-1023)')}
                 </div>`;
             },
             progress: () => `
@@ -432,7 +441,6 @@
                 const today = new Date().toLocaleDateString('de-DE');
                 
                 return `
-                <!-- Responsive App-Ansicht (für Screen) -->
                 <div id="app-certificate-view" class="max-w-2xl mx-auto text-center space-y-10">
                     <div>
                         <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-xl">
@@ -477,7 +485,6 @@
                     </div>
                 </div>
 
-                <!-- DIN A4 Formular (nur für den Drucker) -->
                 <div id="printable-certificate" class="text-black bg-white">
                     <div style="border-bottom: 3px solid black; padding-bottom: 20px; margin-bottom: 40px; text-align: center;">
                         <h1 style="font-size: 32pt; font-weight: 900; margin: 0; letter-spacing: -2px;">LEISTUNGSNACHWEIS</h1>
@@ -560,14 +567,27 @@
             updateSidebarStatus();
         }
 
+        function startOrResumePractice(level) {
+            activeLevel = level;
+            if (practiceSessions[level] && practiceSessions[level].isActive) {
+                renderTask();
+            } else {
+                startPractice(level);
+            }
+        }
+
         function startPractice(level) {
-            practiceState = { level, currentTask: 1, correctCount: 0, totalTasks: 20, isActive: true, totalSessionTime: 0 };
-            saveSession(); renderTask();
+            activeLevel = level;
+            practiceSessions[level] = { level, currentTask: 1, correctCount: 0, totalTasks: 20, isActive: true, totalSessionTime: 0 };
+            saveAllSessions();
+            renderTask();
         }
 
         function renderTask() {
-            if (!practiceState.isActive) return;
-            const bits = practiceState.level === 'G' ? 6 : (practiceState.level === 'M' ? 8 : 10);
+            if (!activeLevel || !practiceSessions[activeLevel].isActive) return;
+            
+            const session = practiceSessions[activeLevel];
+            const bits = activeLevel === 'G' ? 6 : (activeLevel === 'M' ? 8 : 10);
             const maxVal = Math.pow(2, bits) - 1;
             const randomVal = Math.floor(Math.random() * (maxVal + 1));
             const isBinaryToDecimal = Math.random() > 0.5;
@@ -581,20 +601,21 @@
                 question = `Wandle <span class="text-purple-600 dark:text-purple-400 font-black text-6xl block my-8">${randomVal}</span> in Binär um (${bits} Bit):`;
                 expected = randomVal.toString(2).padStart(bits, '0');
             }
-            practiceState.expectedAnswer = expected;
-            practiceState.taskStartTime = Date.now();
+            
+            session.expectedAnswer = expected;
+            session.taskStartTime = Date.now();
 
-            let help = practiceState.level === 'G' ? `<div class="mb-12 flex justify-center gap-3 overflow-x-auto pb-4">
+            let help = activeLevel === 'G' ? `<div class="mb-12 flex justify-center gap-3 overflow-x-auto pb-4">
                 ${[32, 16, 8, 4, 2, 1].map((v, i) => `<div class="min-w-[4rem] p-4 bg-slate-50 dark:bg-slate-800 rounded-3xl text-center shadow-sm border border-slate-100 dark:border-slate-700"><p class="text-sm font-black">${v}</p><p class="text-[10px] text-slate-400 font-bold mt-1">2^${5-i}</p></div>`).join('')}
             </div>` : "";
 
             document.getElementById('content-area').innerHTML = `
                 <div class="flex justify-between items-center mb-10 no-print">
                     <button onclick="loadContent('practice')" class="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors">Abbrechen</button>
-                    <div class="px-5 py-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-black text-xs shadow-sm">${practiceState.currentTask} / 20</div>
+                    <div class="px-5 py-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-black text-xs shadow-sm">${session.currentTask} / 20</div>
                 </div>
                 <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full mb-12 overflow-hidden shadow-inner no-print">
-                    <div class="bg-blue-500 h-full transition-all duration-700" style="width: ${(practiceState.currentTask / 20) * 100}%"></div>
+                    <div class="bg-blue-500 h-full transition-all duration-700" style="width: ${(session.currentTask / 20) * 100}%"></div>
                 </div>
                 ${help}
                 <div class="text-center max-w-xl mx-auto mb-10">
@@ -611,7 +632,8 @@
         }
 
         function checkAnswer() {
-            const timeTaken = Date.now() - practiceState.taskStartTime;
+            const session = practiceSessions[activeLevel];
+            const timeTaken = Date.now() - session.taskStartTime;
             const input = document.getElementById('answer-input');
             const feedback = document.getElementById('feedback-area');
             const userAnswer = input.value.trim().replace(/\s/g, '');
@@ -620,37 +642,38 @@
             input.disabled = true;
             document.getElementById('submit-btn').disabled = true;
 
-            const isCorrect = userAnswer === practiceState.expectedAnswer;
+            const isCorrect = userAnswer === session.expectedAnswer;
             if (isCorrect) {
-                practiceState.correctCount++;
+                session.correctCount++;
                 feedback.innerHTML = `<span class="text-emerald-500"><i class="fas fa-check-circle mr-2"></i> Richtig!</span>`;
             } else {
-                const corr = practiceState.expectedAnswer.length > 5 && !isNaN(parseInt(practiceState.expectedAnswer[0])) ? formatBinary(practiceState.expectedAnswer) : practiceState.expectedAnswer;
+                const corr = session.expectedAnswer.length > 5 && !isNaN(parseInt(session.expectedAnswer[0])) ? formatBinary(session.expectedAnswer) : session.expectedAnswer;
                 feedback.innerHTML = `<span class="text-rose-500"><i class="fas fa-circle-xmark mr-2"></i> Lösung: ${corr}</span>`;
             }
 
-            const lvl = practiceState.level;
-            globalStats[lvl].totalTasks++;
-            globalStats[lvl].totalTime += timeTaken;
-            if (isCorrect) globalStats[lvl].totalCorrect++;
+            globalStats[activeLevel].totalTasks++;
+            globalStats[activeLevel].totalTime += timeTaken;
+            if (isCorrect) globalStats[activeLevel].totalCorrect++;
             saveGlobalStats();
 
             setTimeout(() => {
-                if (practiceState.currentTask < 20) {
-                    practiceState.currentTask++;
-                    saveSession(); renderTask();
+                if (session.currentTask < 20) {
+                    session.currentTask++;
+                    saveAllSessions(); renderTask();
                 } else showFinalResult();
             }, 1200);
         }
 
         function showFinalResult() {
-            const percentage = (practiceState.correctCount / 20) * 100;
-            const lvl = practiceState.level;
-            globalStats[lvl].completed++;
-            if (percentage > globalStats[lvl].best) globalStats[lvl].best = percentage;
+            const session = practiceSessions[activeLevel];
+            const percentage = (session.correctCount / 20) * 100;
+            globalStats[activeLevel].completed++;
+            if (percentage > globalStats[activeLevel].best) globalStats[activeLevel].best = percentage;
             saveGlobalStats();
-            practiceState.isActive = false;
-            localStorage.removeItem('infoLernSession');
+            
+            // Sitzung dieses Niveaus löschen
+            practiceSessions[activeLevel] = null;
+            saveAllSessions();
 
             document.getElementById('content-area').innerHTML = `
                 <div class="text-center py-10 max-w-lg mx-auto">
@@ -666,6 +689,7 @@
                     </div>
                 </div>
             `;
+            activeLevel = null;
         }
 
         function generateQR() {
@@ -683,7 +707,8 @@
                 localStorage.clear();
                 globalStats = {...defaultStats};
                 globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
-                practiceState.isActive = false;
+                practiceSessions = { G: null, M: null, E: null };
+                activeLevel = null;
                 localStorage.setItem('infoLernStats', JSON.stringify(globalStats));
                 if (fromStart) location.reload(); else loadContent('welcome');
             }
