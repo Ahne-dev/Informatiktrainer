@@ -145,18 +145,20 @@
             isActive: false
         };
 
-        // Statistiken laden
-        let globalStats = JSON.parse(localStorage.getItem('infoLernStats')) || {
+        // Statistiken initialisieren oder laden
+        const defaultStats = {
             username: '',
             G: { completed: 0, best: 0 },
             M: { completed: 0, best: 0 },
             E: { completed: 0, best: 0 }
         };
 
+        let globalStats = JSON.parse(localStorage.getItem('infoLernStats')) || {...defaultStats};
+
         // Zufällige Namen Liste
         const randomNames = ["Anonymer Algorithmus", "Binärer Beobachter", "Compiler-Champion", "Daten-Detektiv", "Ethernet-Experte", "Firewall-Fan", "Giga-Guru", "Hardware-Held"];
 
-        // Falls kein Name existiert, einen generieren
+        // Initialer Name
         if (!globalStats.username) {
             globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
             localStorage.setItem('infoLernStats', JSON.stringify(globalStats));
@@ -179,7 +181,8 @@
         }
 
         function updateUI() {
-            document.getElementById('current-username').innerText = globalStats.username;
+            const el = document.getElementById('current-username');
+            if (el) el.innerText = globalStats.username;
         }
 
         function updateSidebarStatus() {
@@ -212,11 +215,20 @@
                 </div>
                 
                 <div class="mb-12">
-                    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6">Hallo! Wie heißt du?</h1>
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                        <div>
+                            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-2">Hallo! Wie heißt du?</h1>
+                            <p class="text-gray-500 dark:text-gray-400">Gib deinen Namen ein, um deinen Fortschritt zu speichern.</p>
+                        </div>
+                        <button onclick="resetAllProgress()" class="text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg border border-red-100 dark:border-red-800 transition-colors">
+                            <i class="fas fa-user-slash mr-2"></i> Neuer Schüler? Daten löschen
+                        </button>
+                    </div>
+
                     <div class="flex gap-4 max-w-md">
                         <input type="text" id="username-input" value="${globalStats.username}" placeholder="Dein Name..." 
                                class="flex-1 p-4 bg-gray-100 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none font-bold transition-all">
-                        <button onclick="updateName()" class="px-6 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700">Speichern</button>
+                        <button onclick="updateName()" class="px-6 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-500/20">Speichern</button>
                     </div>
                 </div>
 
@@ -250,16 +262,16 @@
                         </div>
                     `).join('')}
                 </div>
-                <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-2xl text-center mb-8">
+                <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-2xl text-center mb-8 border border-gray-200 dark:border-gray-700">
                     <div id="decimal-result" class="text-5xl font-mono font-bold text-blue-600 dark:text-blue-400 mt-2">0</div>
                 </div>
-                <button onclick="loadContent('welcome')" class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl">Zurück</button>
+                <button onclick="loadContent('welcome')" class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 transition-colors">Zurück</button>
             `,
             practice: () => {
                 let resumeBtn = "";
                 if (practiceState.isActive) {
                     resumeBtn = `
-                        <button onclick="renderTask()" class="w-full mb-6 p-6 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 flex items-center justify-between group">
+                        <button onclick="renderTask()" class="w-full mb-6 p-6 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 flex items-center justify-between group shadow-lg shadow-purple-500/20">
                             <div class="text-left">
                                 <span class="text-xs font-bold uppercase tracking-widest opacity-75">Sitzung fortsetzen</span>
                                 <h4 class="text-xl font-bold">${practiceState.level}-Niveau: Aufgabe ${practiceState.currentTask}/20</h4>
@@ -299,29 +311,29 @@
                 <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6">Lernpass von ${globalStats.username}</h1>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center">
+                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center border border-gray-200 dark:border-gray-700">
                         <div class="text-sm text-gray-500 font-bold uppercase">G-Niveau</div>
                         <div class="text-2xl font-bold text-blue-600">${globalStats.G.completed} Runden</div>
                         <div class="text-[10px] text-gray-400">Bestwert: ${globalStats.G.best}%</div>
                     </div>
-                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center">
+                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center border border-gray-200 dark:border-gray-700">
                         <div class="text-sm text-gray-500 font-bold uppercase">M-Niveau</div>
                         <div class="text-2xl font-bold text-blue-600">${globalStats.M.completed} Runden</div>
                         <div class="text-[10px] text-gray-400">Bestwert: ${globalStats.M.best}%</div>
                     </div>
-                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center">
+                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center border border-gray-200 dark:border-gray-700">
                         <div class="text-sm text-gray-500 font-bold uppercase">E-Niveau</div>
                         <div class="text-2xl font-bold text-blue-600">${globalStats.E.completed} Runden</div>
                         <div class="text-[10px] text-gray-400">Bestwert: ${globalStats.E.best}%</div>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 text-center">
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 text-center shadow-sm">
                     <h3 class="text-xl font-bold mb-4">Dein Nachweis-QR-Code</h3>
                     <p class="text-gray-500 text-sm mb-8 text-balance">Zeige diesen Code deiner Lehrkraft zum Einscannen der Ergebnisse.</p>
-                    <div id="qrcode" class="mb-8 flex justify-center"></div>
+                    <div id="qrcode" class="mb-8 flex justify-center min-h-[220px]"></div>
                     <div class="flex justify-center gap-4">
-                        <button onclick="generateQR()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700">Aktualisieren</button>
+                        <button onclick="generateQR()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition-colors">Aktualisieren</button>
                     </div>
                 </div>
             `
@@ -332,7 +344,7 @@
             if (input && input.value.trim()) {
                 globalStats.username = input.value.trim();
                 saveGlobalStats();
-                loadContent('welcome'); // UI Refresh
+                loadContent('welcome'); 
             }
         }
 
@@ -348,8 +360,7 @@
                 contentArea.style.opacity = '1';
                 
                 if (topicId === 'progress') {
-                    // Timeout sorgt dafür, dass das div im DOM ist, bevor QRCode aufgerufen wird
-                    setTimeout(generateQR, 50);
+                    setTimeout(generateQR, 100);
                 }
                 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -405,15 +416,15 @@
                 </div>
 
                 <div class="text-center mb-10">
-                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-6">${question}</p>
+                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-6 font-medium">${question}</p>
                     <input type="text" id="answer-input" autofocus placeholder="${placeholder}" 
-                           class="w-full max-w-md p-4 text-2xl text-center font-mono border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl focus:border-purple-500 outline-none transition-all">
+                           class="w-full max-w-md p-4 text-2xl text-center font-mono border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl focus:border-purple-500 outline-none transition-all shadow-sm">
                 </div>
 
                 <div id="feedback-area" class="h-12 mb-8 text-center font-bold"></div>
 
                 <div class="flex justify-center">
-                    <button id="submit-btn" onclick="checkAnswer()" class="px-12 py-4 bg-purple-600 text-white font-bold rounded-2xl shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105">
+                    <button id="submit-btn" onclick="checkAnswer()" class="px-12 py-4 bg-purple-600 text-white font-bold rounded-2xl shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105 active:scale-95">
                         Prüfen
                     </button>
                 </div>
@@ -437,13 +448,13 @@
 
             if (userAnswer === practiceState.expectedAnswer) {
                 practiceState.correctCount++;
-                feedback.innerHTML = `<span class="text-green-500"><i class="fas fa-check-circle mr-2"></i> Richtig!</span>`;
+                feedback.innerHTML = `<span class="text-green-500 flex items-center justify-center"><i class="fas fa-check-circle mr-2"></i> Richtig!</span>`;
                 input.classList.add('border-green-500', 'bg-green-50', 'dark:bg-green-900/20');
             } else {
                 const displayAnswer = (practiceState.expectedAnswer.length > 5 && !isNaN(parseInt(practiceState.expectedAnswer[0]))) 
                                       ? formatBinary(practiceState.expectedAnswer) 
                                       : practiceState.expectedAnswer;
-                feedback.innerHTML = `<span class="text-red-500"><i class="fas fa-times-circle mr-2"></i> Richtig wäre: ${displayAnswer}</span>`;
+                feedback.innerHTML = `<span class="text-red-500 flex items-center justify-center"><i class="fas fa-times-circle mr-2"></i> Richtig wäre: ${displayAnswer}</span>`;
                 input.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
             }
 
@@ -470,14 +481,14 @@
 
             document.getElementById('content-area').innerHTML = `
                 <div class="text-center py-10">
-                    <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+                    <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">
                         <i class="fas fa-trophy"></i>
                     </div>
                     <h2 class="text-3xl font-extrabold mb-2 dark:text-white">Runde beendet!</h2>
                     <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg">${globalStats.username}, du hast ${practiceState.correctCount}/${practiceState.totalTasks} Punkte.</p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button onclick="loadContent('practice')" class="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg">Neue Runde</button>
-                        <button onclick="loadContent('progress')" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg">QR-Pass zeigen</button>
+                        <button onclick="loadContent('practice')" class="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 transition-colors">Neue Runde</button>
+                        <button onclick="loadContent('progress')" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-colors">QR-Pass zeigen</button>
                     </div>
                 </div>
             `;
@@ -503,6 +514,19 @@
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.M
             });
+        }
+
+        function resetAllProgress() {
+            if (confirm("Möchtest du wirklich alle Statistiken und den Namen löschen, um für einen neuen Schüler Platz zu machen?")) {
+                localStorage.clear();
+                globalStats = {...defaultStats};
+                globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
+                practiceState.isActive = false;
+                localStorage.setItem('infoLernStats', JSON.stringify(globalStats));
+                loadContent('welcome');
+                updateUI();
+                updateSidebarStatus();
+            }
         }
 
         function toggleBit(btn, value) {
