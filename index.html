@@ -187,7 +187,7 @@
                     
                     <p class="px-4 text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-8 mb-4">Lernen</p>
                     <div onclick="loadContent('binary')" data-topic="binary" class="nav-item flex items-center px-5 py-4 text-sm font-semibold rounded-2xl">
-                        <i class="fas fa-binary w-6 text-lg mr-3"></i> Theorie
+                        <i class="fas fa-microchip w-6 text-lg mr-3"></i> Theorie
                     </div>
                     <div onclick="loadContent('practice')" data-topic="practice" class="nav-item flex items-center px-5 py-4 text-sm font-semibold rounded-2xl">
                         <i class="fas fa-dumbbell w-6 text-lg mr-3"></i> Training
@@ -353,7 +353,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div onclick="loadContent('binary')" class="topic-card group cursor-pointer p-10 bg-blue-50/50 dark:bg-blue-900/10 rounded-4xl border border-blue-100/50 dark:border-blue-800/30 hover:shadow-2xl hover:shadow-blue-500/20">
                             <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform shadow-lg">
-                                <i class="fas fa-binary text-2xl"></i>
+                                <i class="fas fa-microchip text-2xl"></i>
                             </div>
                             <h3 class="text-2xl font-black mb-4 dark:text-white">Theorie-Modul</h3>
                             <p class="text-slate-500 dark:text-slate-400 font-medium mb-6">Experimentiere mit Bits und Bytes und lerne die Stellenwerte kennen.</p>
@@ -371,7 +371,11 @@
                 </div>
             `,
             binary: () => `
-                <h1 class="text-4xl font-black mb-10 dark:text-white tracking-tighter">Bits experimentieren</h1>
+                <div class="inline-flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
+                    <i class="fas fa-microchip"></i>
+                    <span>Grundlagen</span>
+                </div>
+                <h1 class="text-4xl font-black mb-10 dark:text-white tracking-tighter">Binär-Konverter</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                     <div class="p-8 bg-slate-50 dark:bg-slate-800 rounded-4xl border border-slate-100 dark:border-slate-700">
                          <div class="flex flex-wrap gap-3 justify-center">
@@ -409,6 +413,10 @@
                 };
 
                 return `
+                <div class="inline-flex items-center space-x-2 text-purple-600 dark:text-purple-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
+                    <i class="fas fa-dumbbell"></i>
+                    <span>Training</span>
+                </div>
                 <h1 class="text-4xl font-black mb-10 dark:text-white tracking-tighter">Wähle dein Training</h1>
                 <p class="text-slate-500 dark:text-slate-400 font-medium mb-10 max-w-2xl">
                     Jedes Niveau speichert deinen Fortschritt einzeln. Du kannst jederzeit zwischen den Levels springen.
@@ -420,6 +428,10 @@
                 </div>`;
             },
             progress: () => `
+                <div class="inline-flex items-center space-x-2 text-orange-600 dark:text-orange-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
+                    <i class="fas fa-qrcode"></i>
+                    <span>Nachweise</span>
+                </div>
                 <h1 class="text-4xl font-black mb-12 dark:text-white tracking-tighter">Dein Lernpass</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div class="p-10 bg-white dark:bg-slate-800 rounded-5xl border-2 border-slate-100 dark:border-slate-700 text-center shadow-2xl overflow-hidden">
@@ -561,7 +573,7 @@
         function generateQR() {
             const el = document.getElementById("qrcode");
             if (!el) {
-                // Wenn das Element noch nicht da ist (z.B. während des Ladevorgangs), kurz warten
+                // Wenn das Element noch nicht da ist, kurz warten
                 setTimeout(generateQR, 50);
                 return;
             }
@@ -579,17 +591,18 @@
             };
 
             try {
+                // Initialisierung der qrcode.js Bibliothek
                 new QRCode(el, {
                     text: JSON.stringify(qrPayload),
                     width: 200,
                     height: 200,
                     colorDark : "#000000",
                     colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
+                    correctLevel : QRCode.CorrectLevel.M
                 });
             } catch (err) {
-                el.innerHTML = "<p class='text-red-500 text-xs'>Fehler bei QR-Code Erstellung</p>";
-                console.error(err);
+                el.innerHTML = "<p class='text-red-500 text-xs font-bold'>QR-Fehler</p>";
+                console.error("QR Code Error:", err);
             }
         }
 
@@ -604,10 +617,9 @@
                 });
                 contentArea.classList.remove('opacity-0', 'translate-y-4');
                 
-                // QR-Code Generierung triggern, wenn wir im Lernpass sind
+                // QR-Code Generierung triggern
                 if (topicId === 'progress') {
-                    // Kurzer Timeout, damit DOM gerendert ist
-                    setTimeout(generateQR, 100);
+                    setTimeout(generateQR, 150);
                 }
                 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
