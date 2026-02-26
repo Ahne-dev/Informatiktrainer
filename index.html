@@ -5,140 +5,178 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informatik Lernmodul</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f4ff',
+                            100: '#d9e2ff',
+                            200: '#bacaff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                        '5xl': '2.5rem',
+                    }
+                }
+            }
         }
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
-        .nav-item:hover {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            transition: background-color 0.4s ease;
         }
-        .dark .nav-item:hover {
-            background-color: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
+
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         .nav-item.active {
-            background-color: #2563eb;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
         }
-        .topic-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        .sidebar-transition {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .topic-card:hover {
-            transform: translateY(-5px);
-        }
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
+
         #qrcode img {
             margin: 0 auto;
-            border: 12px solid white;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 10px solid white;
+            border-radius: 1.5rem;
         }
-        .glass-effect {
-            backdrop-filter: blur(12px);
-            background-color: rgba(255, 255, 255, 0.8);
-        }
-        .dark .glass-effect {
-            background-color: rgba(15, 23, 42, 0.9);
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(156, 163, 175, 0.3); 
+            border-radius: 10px; 
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 overflow-x-hidden">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overflow-x-hidden selection:bg-blue-500/30">
 
     <!-- Start/Login Overlay -->
-    <div id="start-overlay" class="fixed inset-0 z-[200] flex items-center justify-center p-4 glass-effect">
-        <div class="bg-white dark:bg-gray-900 w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-gray-800 text-center">
-            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg shadow-blue-500/30">
-                <i class="fas fa-code text-2xl"></i>
+    <div id="start-overlay" class="fixed inset-0 z-[200] flex items-center justify-center p-4 glass">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg p-10 rounded-5xl shadow-2xl border border-white dark:border-slate-800 text-center transform transition-all">
+            <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center text-white mx-auto mb-8 shadow-xl rotate-3">
+                <i class="fas fa-terminal text-3xl"></i>
             </div>
-            <h2 class="text-3xl font-extrabold mb-2 dark:text-white">Willkommen!</h2>
-            <p id="start-desc" class="text-gray-500 dark:text-gray-400 mb-8">Bereit für eine neue Lerneinheit?</p>
+            <h2 class="text-4xl font-extrabold mb-3 tracking-tight dark:text-white">Willkommen zurück!</h2>
+            <p id="start-desc" class="text-slate-500 dark:text-slate-400 mb-10 text-lg">Wähle deinen Namen für dieses Lernmodul.</p>
             
-            <div class="space-y-4">
-                <div class="text-left">
-                    <label class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 ml-1">Dein Name</label>
-                    <input type="text" id="initial-username" placeholder="Name eingeben..." 
-                           class="w-full p-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 rounded-2xl outline-none font-bold transition-all">
+            <div class="space-y-6">
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                    </div>
+                    <input type="text" id="initial-username" placeholder="Dein Name..." 
+                           class="w-full pl-12 pr-5 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 rounded-3xl outline-none font-bold transition-all text-lg">
                 </div>
                 
-                <button onclick="confirmUser()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all transform active:scale-95">
-                    Jetzt weiterarbeiten
+                <button onclick="confirmUser()" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-3xl shadow-xl shadow-blue-500/25 transition-all transform hover:scale-[1.02] active:scale-95 text-lg">
+                    Lernmodul starten
                 </button>
                 
-                <div class="pt-2">
-                    <button onclick="resetAllProgress(true)" class="text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-tight">
-                        <i class="fas fa-user-slash mr-1"></i> Neuer Schüler? Daten löschen
+                <div class="pt-4">
+                    <button onclick="resetAllProgress(true)" class="text-sm font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest flex items-center justify-center mx-auto">
+                        <i class="fas fa-user-slash mr-2"></i> Daten zurücksetzen
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Mobile Navigation Toggle -->
-    <button id="menu-btn" class="fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md lg:hidden">
-        <i class="fas fa-bars"></i>
-    </button>
+    <!-- Mobile Header -->
+    <header class="lg:hidden fixed top-0 inset-x-0 h-16 glass z-40 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                <i class="fas fa-code text-xs"></i>
+            </div>
+            <span class="font-bold tracking-tight">InfoLern</span>
+        </div>
+        <button id="menu-btn" class="p-2 text-slate-600 dark:text-slate-300">
+            <i class="fas fa-bars-staggered text-xl"></i>
+        </button>
+    </header>
 
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:block">
-            <div class="h-full flex flex-col px-3 py-4">
-                <div class="flex items-center mb-8 px-2 cursor-pointer" onclick="loadContent('welcome')">
-                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white mr-3">
-                        <i class="fas fa-code"></i>
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 glass border-r border-slate-200 dark:border-slate-800 sidebar-transition transform -translate-x-full lg:translate-x-0 lg:static">
+            <div class="h-full flex flex-col p-6">
+                <div class="hidden lg:flex items-center mb-10 px-2 cursor-pointer" onclick="loadContent('welcome')">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white mr-4 shadow-lg">
+                        <i class="fas fa-terminal"></i>
                     </div>
-                    <span class="text-xl font-bold text-gray-800 dark:text-white tracking-tight">InfoLern</span>
+                    <span class="text-2xl font-black tracking-tighter dark:text-white">InfoLern</span>
                 </div>
 
                 <!-- User Profile Display -->
-                <div id="user-display" class="mb-6 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50">
-                    <p class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Benutzer</p>
-                    <p id="current-username" class="text-sm font-bold truncate">Lädt...</p>
+                <div class="mb-8 p-5 bg-slate-50 dark:bg-slate-800/50 rounded-4xl border border-slate-100 dark:border-slate-700/50 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-user-astronaut text-4xl"></i>
+                    </div>
+                    <p class="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Profil</p>
+                    <p id="current-username" class="text-base font-bold truncate dark:text-white">Lädt...</p>
                 </div>
                 
-                <nav class="space-y-1 flex-1 overflow-y-auto" id="main-nav">
-                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Einführung</p>
-                    <a href="#" onclick="loadContent('welcome')" data-topic="welcome" class="nav-item active flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
-                        <i class="fas fa-home w-5 mr-3"></i> Willkommen
+                <nav class="space-y-2 flex-1 overflow-y-auto pr-2" id="main-nav">
+                    <p class="px-4 text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Hauptmenü</p>
+                    <a href="#" onclick="loadContent('welcome')" data-topic="welcome" class="nav-item active flex items-center px-5 py-4 text-sm font-semibold rounded-2xl">
+                        <i class="fas fa-house w-6 text-lg mr-3"></i> Home
                     </a>
                     
-                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Grundlagen</p>
-                    <a href="#" onclick="loadContent('binary')" data-topic="binary" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
-                        <i class="fas fa-binary w-5 mr-3"></i> Binärsystem
+                    <p class="px-4 text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-8 mb-4">Module</p>
+                    <a href="#" onclick="loadContent('binary')" data-topic="binary" class="nav-item flex items-center px-5 py-4 text-sm font-semibold rounded-2xl">
+                        <i class="fas fa-binary w-6 text-lg mr-3"></i> Theorie
                     </a>
-                    <a href="#" onclick="loadContent('practice')" data-topic="practice" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
-                        <i class="fas fa-dumbbell w-5 mr-3"></i> Übung: Umrechnung
+                    <a href="#" onclick="loadContent('practice')" data-topic="practice" class="nav-item flex items-center px-5 py-4 text-sm font-semibold rounded-2xl">
+                        <i class="fas fa-dumbbell w-6 text-lg mr-3"></i> Training
                     </a>
                     
-                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Tools</p>
-                    <a href="#" onclick="loadContent('progress')" data-topic="progress" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
-                        <i class="fas fa-qrcode w-5 mr-3"></i> Fortschritts-QR
+                    <p class="px-4 text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-8 mb-4">Nachweis</p>
+                    <a href="#" onclick="loadContent('progress')" data-topic="progress" class="nav-item flex items-center px-5 py-4 text-sm font-semibold rounded-2xl">
+                        <i class="fas fa-qrcode w-6 text-lg mr-3"></i> Lernpass
                     </a>
                 </nav>
 
-                <!-- Status & Theme -->
-                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto space-y-2">
-                    <div id="sidebar-stats" class="px-3 py-2 text-[10px] text-gray-400 uppercase font-bold tracking-widest">
+                <!-- Footer Sidebar -->
+                <div class="pt-6 border-t border-slate-100 dark:border-slate-800 mt-auto space-y-3">
+                    <div id="sidebar-stats" class="px-4 py-2 text-[10px] text-slate-400 uppercase font-bold tracking-widest flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
                         Status: Bereit
                     </div>
-                    <button id="theme-toggle" class="flex items-center w-full p-3 text-sm font-medium rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <button id="theme-toggle" class="flex items-center w-full px-5 py-3 text-sm font-bold rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         <span class="dark:hidden flex items-center">
-                            <i class="fas fa-moon w-5 mr-3"></i> Dunkelmodus
+                            <i class="fas fa-moon mr-3"></i> Dark Mode
                         </span>
                         <span class="hidden dark:flex items-center">
-                            <i class="fas fa-sun w-5 mr-3"></i> Hellmodus
+                            <i class="fas fa-sun mr-3 text-yellow-400"></i> Light Mode
                         </span>
                     </button>
                 </div>
@@ -146,39 +184,36 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 min-w-0 bg-white lg:bg-gray-50 dark:bg-gray-950 overflow-auto">
-            <div class="max-w-4xl mx-auto py-12 px-6 sm:px-12 lg:py-20">
-                <div id="content-area" class="bg-white dark:bg-gray-900 p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 min-h-[600px] transition-all duration-300">
-                    <div id="dynamic-content">
+        <main class="flex-1 min-w-0 bg-slate-50 dark:bg-slate-950 overflow-auto pt-16 lg:pt-0">
+            <div class="max-w-5xl mx-auto py-8 px-4 sm:px-8 lg:py-16">
+                <div id="content-area" class="bg-white dark:bg-slate-900 p-6 md:p-14 rounded-5xl shadow-sm border border-slate-100 dark:border-slate-800/50 min-h-[70vh] transition-all duration-500">
+                    <div id="dynamic-content" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <!-- Content wird per JS geladen -->
                     </div>
                 </div>
                 
-                <footer class="mt-12 text-center text-gray-400 dark:text-gray-600 text-sm">
-                    <p>&copy; 2024 Informatik-Lernmodul. Fortschritt wird lokal gespeichert.</p>
+                <footer class="mt-12 mb-8 text-center text-slate-400 dark:text-slate-600 text-[11px] font-bold uppercase tracking-[0.3em]">
+                    <p>&copy; 2024 Computer Science Academy &bull; Offline Modus aktiv</p>
                 </footer>
             </div>
         </main>
     </div>
 
     <!-- Modals (Custom Alerts) -->
-    <div id="modal-container" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-900 p-8 rounded-3xl max-w-sm w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-800">
-            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
-            <p id="modal-text" class="text-gray-600 dark:text-gray-400 mb-6"></p>
-            <button onclick="closeModal()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl">Verstanden</button>
+    <div id="modal-container" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-4xl max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center">
+            <div id="modal-icon" class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"></div>
+            <h3 id="modal-title" class="text-2xl font-black mb-3 dark:text-white leading-tight"></h3>
+            <p id="modal-text" class="text-slate-500 dark:text-slate-400 mb-8"></p>
+            <button onclick="closeModal()" class="w-full py-4 bg-slate-900 dark:bg-blue-600 text-white font-bold rounded-2xl shadow-xl transition-transform active:scale-95">Verstanden</button>
         </div>
     </div>
 
     <script>
         // Persistence & State
         let practiceState = {
-            level: '',
-            currentTask: 0,
-            correctCount: 0,
-            totalTasks: 20,
-            expectedAnswer: '',
-            isActive: false
+            level: '', currentTask: 0, correctCount: 0,
+            totalTasks: 20, expectedAnswer: '', isActive: false
         };
 
         const defaultStats = {
@@ -194,22 +229,13 @@
         function confirmUser() {
             const input = document.getElementById('initial-username');
             const overlay = document.getElementById('start-overlay');
-            
-            if (input.value.trim()) {
-                globalStats.username = input.value.trim();
-            } else if (!globalStats.username) {
-                globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
-            }
+            if (input.value.trim()) globalStats.username = input.value.trim();
+            else if (!globalStats.username) globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
             
             saveGlobalStats();
-            overlay.classList.add('hidden');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => overlay.style.display = 'none', 400);
             loadContent('welcome');
-        }
-
-        // Sitzung laden
-        const savedSession = JSON.parse(localStorage.getItem('infoLernSession'));
-        if (savedSession && savedSession.isActive) {
-            practiceState = savedSession;
         }
 
         function saveSession() {
@@ -230,9 +256,9 @@
         function updateSidebarStatus() {
             const statusEl = document.getElementById('sidebar-stats');
             if (practiceState.isActive) {
-                statusEl.innerHTML = `<span class="text-purple-500 animate-pulse">Laufend: ${practiceState.level}-Niveau (${practiceState.currentTask}/20)</span>`;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-500 mr-2 animate-ping shadow-[0_0_8px_rgba(168,85,247,0.6)]"></span><span class="text-purple-500">Training läuft</span>`;
             } else {
-                statusEl.innerText = "Status: Bereit";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>Status: Bereit`;
             }
         }
 
@@ -242,127 +268,145 @@
             for (let i = binStr.length - 1; i >= 0; i--) {
                 result = binStr[i] + result;
                 count++;
-                if (count % 4 === 0 && i !== 0) {
-                    result = ' ' + result;
-                }
+                if (count % 4 === 0 && i !== 0) result = ' ' + result;
             }
             return result;
         }
 
         const topics = {
             welcome: () => `
-                <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-widest mb-4">
-                    <span class="h-px w-8 bg-blue-600 dark:bg-blue-400"></span>
-                    <span>Willkommen</span>
-                </div>
-                
-                <div class="mb-12">
-                    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">Bereit für Informatik, ${globalStats.username}?</h1>
-                    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">Wähle ein Modul aus, um zu starten. Dein Fortschritt wird automatisch in deinem Lernpass gespeichert.</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div onclick="loadContent('binary')" class="topic-card cursor-pointer p-8 bg-blue-50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-800/50 hover:shadow-xl hover:shadow-blue-500/10">
-                        <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6"><i class="fas fa-binary text-xl"></i></div>
-                        <h3 class="text-xl font-bold mb-3 dark:text-white">Binärsystem: Theorie</h3>
-                        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">Verstehe die Grundlagen von Bits und Bytes sowie die Stellenwerte.</p>
-                        <span class="text-blue-600 dark:text-blue-400 font-bold text-sm flex items-center">Ansehen <i class="fas fa-arrow-right ml-2"></i></span>
+                <div class="max-w-3xl">
+                    <div class="inline-flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
+                        <span class="h-1 w-12 bg-blue-600 rounded-full"></span>
+                        <span>Dashboard</span>
                     </div>
-                    <div onclick="loadContent('practice')" class="topic-card cursor-pointer p-8 bg-purple-50 dark:bg-purple-900/20 rounded-3xl border border-purple-100 dark:border-purple-800/50 hover:shadow-xl hover:shadow-purple-500/10">
-                        <div class="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center text-white mb-6"><i class="fas fa-dumbbell text-xl"></i></div>
-                        <h3 class="text-xl font-bold mb-3 dark:text-white">Übung: Umrechnung</h3>
-                        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">Trainiere dein Wissen in 3 Schwierigkeitsstufen (G, M, E Niveau).</p>
-                        <span class="text-purple-600 dark:text-purple-400 font-bold text-sm flex items-center">Jetzt trainieren <i class="fas fa-arrow-right ml-2"></i></span>
+                    <h1 class="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-8 leading-[1.1] tracking-tighter">
+                        Bereit für das nächste Level, ${globalStats.username}?
+                    </h1>
+                    <p class="text-xl text-slate-500 dark:text-slate-400 mb-12 leading-relaxed font-medium">
+                        Wähle eines der Module aus, um dein Wissen in der Informatik zu vertiefen. Dein Lernpass merkt sich alles.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div onclick="loadContent('binary')" class="topic-card group cursor-pointer p-10 bg-blue-50/50 dark:bg-blue-900/10 rounded-4xl border border-blue-100/50 dark:border-blue-800/30 hover:shadow-2xl hover:shadow-blue-500/20">
+                            <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform shadow-lg">
+                                <i class="fas fa-binary text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-black mb-4 dark:text-white">Binär-Theorie</h3>
+                            <p class="text-slate-500 dark:text-slate-400 font-medium mb-6">Verstehe Bits, Bytes und wie Computer Informationen verarbeiten.</p>
+                            <span class="text-blue-600 dark:text-blue-400 font-extrabold flex items-center">Starten <i class="fas fa-chevron-right ml-3 group-hover:translate-x-2 transition-transform"></i></span>
+                        </div>
+                        <div onclick="loadContent('practice')" class="topic-card group cursor-pointer p-10 bg-purple-50/50 dark:bg-purple-900/10 rounded-4xl border border-purple-100/50 dark:border-purple-800/30 hover:shadow-2xl hover:shadow-purple-500/20">
+                            <div class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform shadow-lg">
+                                <i class="fas fa-dumbbell text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-black mb-4 dark:text-white">Umrechnungs-Training</h3>
+                            <p class="text-slate-500 dark:text-slate-400 font-medium mb-6">Trainiere in 3 Niveaus: G, M und E. Hol dir den Highscore!</p>
+                            <span class="text-purple-600 dark:text-purple-400 font-extrabold flex items-center">Üben <i class="fas fa-chevron-right ml-3 group-hover:translate-x-2 transition-transform"></i></span>
+                        </div>
                     </div>
                 </div>
             `,
             binary: () => `
-                <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-widest mb-4">
-                    <span class="h-px w-8 bg-blue-600 dark:bg-blue-400"></span>
+                <div class="inline-flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
+                    <span class="h-1 w-12 bg-blue-600 rounded-full"></span>
                     <span>Grundlagen</span>
                 </div>
-                <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6">Das Binärsystem</h1>
-                <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">Computer kennen nur Strom an (1) oder aus (0).</p>
-                <div class="flex flex-wrap gap-4 mb-8 justify-center">
-                    ${[128, 64, 32, 16, 8, 4, 2, 1].map(val => `
-                        <div class="flex flex-col items-center">
-                            <button onclick="toggleBit(this, ${val})" class="w-12 h-12 rounded-full border-2 border-blue-500 flex items-center justify-center font-bold text-blue-500 hover:bg-blue-500 hover:text-white transition-all bit-btn" data-active="false">0</button>
-                            <span class="text-xs mt-2 font-mono text-gray-400">${val}</span>
+                <h1 class="text-4xl font-black mb-10 dark:text-white tracking-tighter">Das Binärsystem</h1>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                    <div>
+                        <p class="text-lg text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
+                            Alles was du digital siehst, besteht am Ende nur aus Nullen und Einsen. Hier kannst du mit den Bits experimentieren und sehen, welche Dezimalzahl sie ergeben.
+                        </p>
+                        <div class="p-6 bg-slate-50 dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700">
+                             <div class="flex flex-wrap gap-3 justify-center">
+                                ${[128, 64, 32, 16, 8, 4, 2, 1].map(val => `
+                                    <div class="flex flex-col items-center">
+                                        <button onclick="toggleBit(this, ${val})" class="w-12 h-12 rounded-2xl border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-400 dark:text-slate-500 hover:border-blue-500 hover:text-blue-500 transition-all bit-btn" data-active="false">0</button>
+                                        <span class="text-[10px] mt-2 font-bold text-slate-400">${val}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
-                    `).join('')}
+                    </div>
+                    <div class="flex flex-col items-center justify-center p-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-5xl text-white shadow-2xl">
+                        <span class="text-xs font-black uppercase tracking-[0.3em] mb-2 opacity-70">Dezimalwert</span>
+                        <div id="decimal-result" class="text-8xl font-black tracking-tighter">0</div>
+                    </div>
                 </div>
-                <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-2xl text-center mb-8 border border-gray-200 dark:border-gray-700">
-                    <div id="decimal-result" class="text-5xl font-mono font-bold text-blue-600 dark:text-blue-400 mt-2">0</div>
-                </div>
-                <button onclick="loadContent('welcome')" class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 transition-colors">Zurück</button>
+                
+                <button onclick="loadContent('welcome')" class="mt-12 px-10 py-5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-black rounded-3xl hover:bg-slate-200 transition-colors">Zurück zum Menü</button>
             `,
             practice: () => {
                 let resumeBtn = "";
                 if (practiceState.isActive) {
                     resumeBtn = `
-                        <button onclick="renderTask()" class="w-full mb-6 p-6 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 flex items-center justify-between group shadow-lg shadow-purple-500/20">
+                        <button onclick="renderTask()" class="w-full mb-10 p-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-4xl hover:shadow-2xl transition-all flex items-center justify-between group">
                             <div class="text-left">
-                                <span class="text-xs font-bold uppercase tracking-widest opacity-75">Sitzung fortsetzen</span>
-                                <h4 class="text-xl font-bold">${practiceState.level}-Niveau: Aufgabe ${practiceState.currentTask}/20</h4>
+                                <span class="text-[11px] font-black uppercase tracking-[0.2em] opacity-80 mb-2 block">Pausierte Sitzung</span>
+                                <h4 class="text-2xl font-black tracking-tight">${practiceState.level}-Niveau &bull; Aufgabe ${practiceState.currentTask}/20</h4>
                             </div>
-                            <i class="fas fa-play text-2xl group-hover:translate-x-2 transition-transform"></i>
+                            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md group-hover:scale-110 transition-transform">
+                                <i class="fas fa-play"></i>
+                            </div>
                         </button>
                     `;
                 }
                 return `
-                <div class="flex items-center space-x-2 text-purple-600 dark:text-purple-400 text-sm font-bold uppercase tracking-widest mb-4">
-                    <span class="h-px w-8 bg-purple-600 dark:bg-purple-400"></span>
+                <div class="inline-flex items-center space-x-2 text-purple-600 dark:text-purple-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
+                    <span class="h-1 w-12 bg-purple-600 rounded-full"></span>
                     <span>Trainingseinheit</span>
                 </div>
-                <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6">Binärcode Umrechnung</h1>
+                <h1 class="text-4xl font-black mb-10 dark:text-white tracking-tighter">Wähle dein Training</h1>
                 ${resumeBtn}
-                <div class="grid grid-cols-1 gap-4">
-                    <button onclick="startPractice('G')" class="flex items-center justify-between p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl hover:scale-[1.01] transition-transform">
-                        <div class="text-left"><h4 class="text-xl font-bold dark:text-white">G-Niveau (6 Bit)</h4><p class="text-sm text-gray-500">Zahlen 0 - 63</p></div>
-                        <i class="fas fa-chevron-right text-green-500"></i>
-                    </button>
-                    <button onclick="startPractice('M')" class="flex items-center justify-between p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl hover:scale-[1.01] transition-transform">
-                        <div class="text-left"><h4 class="text-xl font-bold dark:text-white">M-Niveau (8 Bit)</h4><p class="text-sm text-gray-500">Zahlen 0 - 255</p></div>
-                        <i class="fas fa-chevron-right text-blue-500"></i>
-                    </button>
-                    <button onclick="startPractice('E')" class="flex items-center justify-between p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl hover:scale-[1.01] transition-transform">
-                        <div class="text-left"><h4 class="text-xl font-bold dark:text-white">E-Niveau (10 Bit)</h4><p class="text-sm text-gray-500">Zahlen 0 - 1023</p></div>
-                        <i class="fas fa-chevron-right text-red-500"></i>
-                    </button>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div onclick="startPractice('G')" class="p-8 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-4xl cursor-pointer hover:shadow-xl transition-all hover:scale-[1.03]">
+                        <span class="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg uppercase">G-Niveau</span>
+                        <h4 class="text-xl font-black mt-6 dark:text-white">Grundlagen</h4>
+                        <p class="text-sm text-slate-500 mt-2 font-medium">6 Bit (0-63)</p>
+                    </div>
+                    <div onclick="startPractice('M')" class="p-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-4xl cursor-pointer hover:shadow-xl transition-all hover:scale-[1.03]">
+                        <span class="px-3 py-1 bg-blue-500 text-white text-[10px] font-black rounded-lg uppercase">M-Niveau</span>
+                        <h4 class="text-xl font-black mt-6 dark:text-white">Mittelschwer</h4>
+                        <p class="text-sm text-slate-500 mt-2 font-medium">8 Bit (0-255)</p>
+                    </div>
+                    <div onclick="startPractice('E')" class="p-8 bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-4xl cursor-pointer hover:shadow-xl transition-all hover:scale-[1.03]">
+                        <span class="px-3 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg uppercase">E-Niveau</span>
+                        <h4 class="text-xl font-black mt-6 dark:text-white">Erweitert</h4>
+                        <p class="text-sm text-slate-500 mt-2 font-medium">10 Bit (0-1023)</p>
+                    </div>
                 </div>
             `;
             },
             progress: () => `
-                <div class="flex items-center space-x-2 text-orange-600 dark:text-orange-400 text-sm font-bold uppercase tracking-widest mb-4">
-                    <span class="h-px w-8 bg-orange-600 dark:bg-orange-400"></span>
-                    <span>Zertifikat & Nachweis</span>
+                <div class="inline-flex items-center space-x-2 text-orange-600 dark:text-orange-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
+                    <span class="h-1 w-12 bg-orange-600 rounded-full"></span>
+                    <span>Fortschritt</span>
                 </div>
-                <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6">Lernpass von ${globalStats.username}</h1>
+                <h1 class="text-4xl font-black mb-12 dark:text-white tracking-tighter">Lernpass von ${globalStats.username}</h1>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center border border-gray-200 dark:border-gray-700">
-                        <div class="text-sm text-gray-500 font-bold uppercase">G-Niveau</div>
-                        <div class="text-2xl font-bold text-blue-600">${globalStats.G.completed} Runden</div>
-                        <div class="text-[10px] text-gray-400">Bestwert: ${globalStats.G.best}%</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div class="space-y-6">
+                        <div class="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-4xl border border-slate-100 dark:border-slate-800">
+                             <h4 class="text-lg font-black mb-6">Deine Statistiken</h4>
+                             <div class="space-y-4">
+                                ${['G','M','E'].map(lvl => `
+                                    <div class="flex justify-between items-center p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">
+                                        <div class="font-bold text-slate-500">${lvl}-Niveau</div>
+                                        <div class="font-black text-blue-600">${globalStats[lvl].completed} Runden &bull; Best: ${globalStats[lvl].best}%</div>
+                                    </div>
+                                `).join('')}
+                             </div>
+                        </div>
+                        <button onclick="resetAllProgress()" class="w-full py-5 text-sm font-black text-red-500 uppercase tracking-widest bg-red-50/50 dark:bg-red-900/10 rounded-3xl hover:bg-red-100 transition-colors">Alle Daten löschen</button>
                     </div>
-                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center border border-gray-200 dark:border-gray-700">
-                        <div class="text-sm text-gray-500 font-bold uppercase">M-Niveau</div>
-                        <div class="text-2xl font-bold text-blue-600">${globalStats.M.completed} Runden</div>
-                        <div class="text-[10px] text-gray-400">Bestwert: ${globalStats.M.best}%</div>
-                    </div>
-                    <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-2xl text-center border border-gray-200 dark:border-gray-700">
-                        <div class="text-sm text-gray-500 font-bold uppercase">E-Niveau</div>
-                        <div class="text-2xl font-bold text-blue-600">${globalStats.E.completed} Runden</div>
-                        <div class="text-[10px] text-gray-400">Bestwert: ${globalStats.E.best}%</div>
-                    </div>
-                </div>
-
-                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 text-center shadow-sm">
-                    <h3 class="text-xl font-bold mb-4">Dein Nachweis-QR-Code</h3>
-                    <p class="text-gray-500 text-sm mb-8 text-balance">Zeige diesen Code deiner Lehrkraft zum Einscannen der Ergebnisse.</p>
-                    <div id="qrcode" class="mb-8 flex justify-center min-h-[220px]"></div>
-                    <div class="flex justify-center gap-4">
-                        <button onclick="generateQR()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition-colors">Aktualisieren</button>
+                    
+                    <div class="p-10 bg-white dark:bg-slate-800 rounded-5xl border-2 border-slate-100 dark:border-slate-700 text-center shadow-2xl">
+                        <h3 class="text-xl font-black mb-2 leading-tight">Digitaler Nachweis</h3>
+                        <p class="text-slate-400 text-sm mb-8 font-medium">Diesen Code zum Scannen vorzeigen.</p>
+                        <div id="qrcode" class="mb-8 flex justify-center scale-90 sm:scale-100"></div>
+                        <button onclick="generateQR()" class="px-8 py-3 bg-slate-900 dark:bg-blue-600 text-white font-black rounded-2xl text-xs hover:scale-105 transition-transform shadow-lg">Aktualisieren</button>
                     </div>
                 </div>
             `
@@ -370,86 +414,78 @@
 
         function loadContent(topicId) {
             const contentArea = document.getElementById('content-area');
-            contentArea.style.opacity = '0';
+            contentArea.classList.add('opacity-0', 'translate-y-4');
+            
             setTimeout(() => {
                 contentArea.innerHTML = `<div id="dynamic-content">${topics[topicId]()}</div>`;
                 document.querySelectorAll('.nav-item').forEach(item => {
                     item.classList.remove('active');
                     if(item.getAttribute('data-topic') === topicId) item.classList.add('active');
                 });
-                contentArea.style.opacity = '1';
-                
-                if (topicId === 'progress') {
-                    setTimeout(generateQR, 100);
-                }
-                
+                contentArea.classList.remove('opacity-0', 'translate-y-4');
+                if (topicId === 'progress') setTimeout(generateQR, 100);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }, 150);
+            
+            if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full');
             updateSidebarStatus();
             updateUI();
         }
 
         function startPractice(level) {
-            practiceState = {
-                level: level,
-                currentTask: 1,
-                correctCount: 0,
-                totalTasks: 20,
-                isActive: true
-            };
+            practiceState = { level, currentTask: 1, correctCount: 0, totalTasks: 20, isActive: true };
             saveSession();
             renderTask();
         }
 
         function renderTask() {
             if (!practiceState.isActive) return;
-
             const bits = practiceState.level === 'G' ? 6 : (practiceState.level === 'M' ? 8 : 10);
             const maxVal = Math.pow(2, bits) - 1;
             const randomVal = Math.floor(Math.random() * (maxVal + 1));
             const isBinaryToDecimal = Math.random() > 0.5;
             
-            let question, placeholder;
+            let question, expected;
             if (isBinaryToDecimal) {
                 const rawBin = randomVal.toString(2).padStart(bits, '0');
-                const formattedBin = formatBinary(rawBin);
-                question = `Wandle <span class="font-mono text-purple-600 dark:text-purple-400 font-bold tracking-wider">${formattedBin}</span> in eine Dezimalzahl um:`;
-                practiceState.expectedAnswer = randomVal.toString();
-                placeholder = "Dezimalzahl eingeben...";
+                question = `Wandle <span class="text-blue-600 dark:text-blue-400 font-black tracking-widest font-mono text-3xl block my-6">${formatBinary(rawBin)}</span> in eine Dezimalzahl um:`;
+                expected = randomVal.toString();
             } else {
-                question = `Wandle die Zahl <span class="font-mono text-purple-600 dark:text-purple-400 font-bold">${randomVal}</span> in einen Binärcode um (${bits} Bit):`;
-                practiceState.expectedAnswer = randomVal.toString(2).padStart(bits, '0');
-                placeholder = `Binärcode (z.B. ${formatBinary(practiceState.expectedAnswer)})`;
+                question = `Wandle die Zahl <span class="text-purple-600 dark:text-purple-400 font-black text-5xl block my-6">${randomVal}</span> in Binär um (${bits} Bit):`;
+                expected = randomVal.toString(2).padStart(bits, '0');
             }
+            practiceState.expectedAnswer = expected;
 
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
-                <div class="flex justify-between items-center mb-8">
-                    <button onclick="loadContent('practice')" class="text-xs font-bold text-gray-400 uppercase hover:text-purple-500 transition-colors">
-                        <i class="fas fa-pause mr-1"></i> Pausieren
+                <div class="flex justify-between items-center mb-10">
+                    <button onclick="loadContent('practice')" class="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 dark:hover:text-white transition-colors">
+                        <i class="fas fa-xmark mr-2"></i> Beenden
                     </button>
-                    <span class="text-sm font-bold text-purple-600 dark:text-purple-400">Aufgabe ${practiceState.currentTask} / ${practiceState.totalTasks}</span>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest">${practiceState.level}-Niveau</span>
+                        <div class="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-black text-xs">
+                            ${practiceState.currentTask} / ${practiceState.totalTasks}
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-12 overflow-hidden">
-                    <div class="bg-purple-600 h-full transition-all duration-500" style="width: ${(practiceState.currentTask / practiceState.totalTasks) * 100}%"></div>
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full mb-16 overflow-hidden shadow-inner">
+                    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full transition-all duration-700" style="width: ${(practiceState.currentTask / practiceState.totalTasks) * 100}%"></div>
                 </div>
 
-                <div class="text-center mb-10">
-                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-6 font-medium">${question}</p>
-                    <input type="text" id="answer-input" autofocus placeholder="${placeholder}" 
-                           class="w-full max-w-md p-4 text-2xl text-center font-mono border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl focus:border-purple-500 outline-none transition-all shadow-sm">
+                <div class="text-center max-w-xl mx-auto mb-12">
+                    <p class="text-xl text-slate-500 dark:text-slate-400 font-bold leading-relaxed mb-4">${question}</p>
+                    <input type="text" id="answer-input" autofocus placeholder="Antwort..." 
+                           class="w-full p-8 text-4xl text-center font-black bg-slate-50 dark:bg-slate-800 border-4 border-slate-100 dark:border-slate-700 focus:border-blue-500 rounded-[2.5rem] outline-none transition-all shadow-lg placeholder:text-slate-300 dark:placeholder:text-slate-600">
                 </div>
 
-                <div id="feedback-area" class="h-12 mb-8 text-center font-bold"></div>
+                <div id="feedback-area" class="h-10 mb-10 text-center font-black uppercase tracking-widest text-sm transition-all"></div>
 
-                <div class="flex justify-center">
-                    <button id="submit-btn" onclick="checkAnswer()" class="px-12 py-4 bg-purple-600 text-white font-bold rounded-2xl shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105 active:scale-95">
-                        Prüfen
-                    </button>
-                </div>
+                <button id="submit-btn" onclick="checkAnswer()" class="w-full py-6 bg-slate-900 dark:bg-blue-600 text-white font-black rounded-3xl shadow-2xl transition-all transform active:scale-95 text-lg hover:shadow-blue-500/20">
+                    Prüfen
+                </button>
             `;
-            
             const inp = document.getElementById('answer-input');
             inp.focus();
             inp.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAnswer(); });
@@ -457,58 +493,56 @@
 
         function checkAnswer() {
             const input = document.getElementById('answer-input');
-            const btn = document.getElementById('submit-btn');
             const feedback = document.getElementById('feedback-area');
             const userAnswer = input.value.trim().replace(/\s/g, '');
-
-            if (userAnswer === "") return;
+            if (!userAnswer) return;
 
             input.disabled = true;
-            btn.disabled = true;
+            document.getElementById('submit-btn').disabled = true;
 
             if (userAnswer === practiceState.expectedAnswer) {
                 practiceState.correctCount++;
-                feedback.innerHTML = `<span class="text-green-500 flex items-center justify-center"><i class="fas fa-check-circle mr-2"></i> Richtig!</span>`;
-                input.classList.add('border-green-500', 'bg-green-50', 'dark:bg-green-900/20');
+                feedback.innerHTML = `<span class="text-emerald-500"><i class="fas fa-check-circle mr-2"></i> Genial! Das ist korrekt.</span>`;
+                input.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/30', 'text-emerald-600');
             } else {
-                const displayAnswer = (practiceState.expectedAnswer.length > 5 && !isNaN(parseInt(practiceState.expectedAnswer[0]))) 
-                                      ? formatBinary(practiceState.expectedAnswer) 
-                                      : practiceState.expectedAnswer;
-                feedback.innerHTML = `<span class="text-red-500 flex items-center justify-center"><i class="fas fa-times-circle mr-2"></i> Richtig wäre: ${displayAnswer}</span>`;
-                input.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
+                const corr = practiceState.expectedAnswer.length > 5 && !isNaN(parseInt(practiceState.expectedAnswer[0])) ? formatBinary(practiceState.expectedAnswer) : practiceState.expectedAnswer;
+                feedback.innerHTML = `<span class="text-rose-500"><i class="fas fa-circle-exclamation mr-2"></i> Fast! Richtig wäre: ${corr}</span>`;
+                input.classList.add('border-rose-500', 'bg-rose-50', 'dark:bg-rose-950/30', 'text-rose-600');
             }
 
             setTimeout(() => {
                 if (practiceState.currentTask < practiceState.totalTasks) {
                     practiceState.currentTask++;
-                    saveSession();
-                    renderTask();
-                } else {
-                    showFinalResult();
-                }
-            }, 1200);
+                    saveSession(); renderTask();
+                } else showFinalResult();
+            }, 1400);
         }
 
         function showFinalResult() {
             const percentage = (practiceState.correctCount / practiceState.totalTasks) * 100;
             const lvl = practiceState.level;
-            globalStats[lvl].completed += 1;
+            globalStats[lvl].completed++;
             if (percentage > globalStats[lvl].best) globalStats[lvl].best = percentage;
             saveGlobalStats();
-
             practiceState.isActive = false;
             localStorage.removeItem('infoLernSession');
 
             document.getElementById('content-area').innerHTML = `
-                <div class="text-center py-10">
-                    <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">
-                        <i class="fas fa-trophy"></i>
+                <div class="text-center py-10 max-w-lg mx-auto">
+                    <div class="w-24 h-24 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-4xl flex items-center justify-center mx-auto mb-10 text-4xl shadow-xl">
+                        <i class="fas fa-flag-checkered"></i>
                     </div>
-                    <h2 class="text-3xl font-extrabold mb-2 dark:text-white">Runde beendet!</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg">${globalStats.username}, du hast ${practiceState.correctCount}/${practiceState.totalTasks} Punkte.</p>
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button onclick="loadContent('practice')" class="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 transition-colors">Neue Runde</button>
-                        <button onclick="loadContent('progress')" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-colors">QR-Pass zeigen</button>
+                    <h2 class="text-5xl font-black mb-4 dark:text-white tracking-tighter">Fertig!</h2>
+                    <p class="text-lg text-slate-500 font-medium mb-12">${globalStats.username}, du hast ${practiceState.correctCount} von ${practiceState.totalTasks} Punkten erreicht.</p>
+                    
+                    <div class="p-10 bg-slate-50 dark:bg-slate-800 rounded-5xl mb-12 border border-slate-100 dark:border-slate-700">
+                        <div class="text-7xl font-black text-blue-600 tracking-tighter mb-2">${percentage}%</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Genauigkeit</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button onclick="loadContent('practice')" class="py-5 bg-blue-600 text-white font-black rounded-3xl shadow-xl">Neue Runde</button>
+                        <button onclick="loadContent('progress')" class="py-5 bg-slate-100 dark:bg-slate-700 dark:text-white font-black rounded-3xl">Lernpass</button>
                     </div>
                 </div>
             `;
@@ -518,66 +552,44 @@
             const el = document.getElementById("qrcode");
             if (!el) return;
             el.innerHTML = "";
-            
-            const data = {
-                name: globalStats.username,
-                results: { G: globalStats.G, M: globalStats.M, E: globalStats.E },
-                v: "1.1",
-                ts: new Date().toISOString()
-            };
-            
             new QRCode(el, {
-                text: JSON.stringify(data),
-                width: 220,
-                height: 220,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
+                text: JSON.stringify({ name: globalStats.username, res: { G: globalStats.G, M: globalStats.M, E: globalStats.E }, ts: new Date().toISOString() }),
+                width: 200, height: 200, colorDark : "#0f172a", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.M
             });
         }
 
         function resetAllProgress(fromStart = false) {
-            const msg = fromStart ? "Möchtest du wirklich alle Daten löschen und als neuer Schüler starten?" : "Möchtest du wirklich alle Statistiken und den Namen löschen?";
-            if (confirm(msg)) {
+            if (confirm("Wirklich alle Lernfortschritte löschen?")) {
                 localStorage.clear();
                 globalStats = {...defaultStats};
                 globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
                 practiceState.isActive = false;
                 localStorage.setItem('infoLernStats', JSON.stringify(globalStats));
-                
                 if (fromStart) {
-                    // Update Overlay
                     document.getElementById('initial-username').value = globalStats.username;
-                    document.getElementById('start-desc').innerText = "Alle Daten wurden gelöscht. Viel Erfolg beim Neustart!";
-                } else {
-                    loadContent('welcome');
-                    updateUI();
-                    updateSidebarStatus();
-                }
+                    document.getElementById('start-desc').innerText = "Daten wurden gelöscht. Starte neu!";
+                } else loadContent('welcome');
             }
         }
 
         function toggleBit(btn, value) {
-            const isActive = btn.getAttribute('data-active') === 'true';
-            let currentTotal = parseInt(document.getElementById('decimal-result').innerText);
-            if (isActive) {
-                btn.setAttribute('data-active', 'false');
-                btn.innerText = '0';
-                btn.classList.remove('bg-blue-600', 'text-white');
-                currentTotal -= value;
+            const active = btn.getAttribute('data-active') === 'true';
+            let cur = parseInt(document.getElementById('decimal-result').innerText);
+            if (active) {
+                btn.setAttribute('data-active', 'false'); btn.innerText = '0';
+                btn.classList.remove('border-blue-500', 'text-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+                cur -= value;
             } else {
-                btn.setAttribute('data-active', 'true');
-                btn.innerText = '1';
-                btn.classList.add('bg-blue-600', 'text-white');
-                currentTotal += value;
+                btn.setAttribute('data-active', 'true'); btn.innerText = '1';
+                btn.classList.add('border-blue-500', 'text-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+                cur += value;
             }
-            document.getElementById('decimal-result').innerText = currentTotal;
+            document.getElementById('decimal-result').innerText = cur;
         }
 
         function closeModal() { document.getElementById('modal-container').classList.add('hidden'); }
 
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.addEventListener('click', () => {
+        document.getElementById('theme-toggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         });
@@ -587,21 +599,13 @@
         });
 
         window.onload = () => {
-            // Check for existing data to customize modal
-            const nameInput = document.getElementById('initial-username');
+            const ni = document.getElementById('initial-username');
             const desc = document.getElementById('start-desc');
-            
             if (globalStats.username && localStorage.getItem('infoLernStats')) {
-                nameInput.value = globalStats.username;
-                desc.innerHTML = `Willkommen zurück, <span class="font-bold text-blue-600">${globalStats.username}</span>!`;
-            } else {
-                nameInput.value = "";
-                desc.innerText = "Bitte gib deinen Namen ein, um zu starten.";
-            }
-
+                ni.value = globalStats.username;
+                desc.innerHTML = `Bereit, <span class="text-blue-600">${globalStats.username}</span>?`;
+            } else ni.value = "";
             if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
-            
-            // Standardmäßig Welcome laden (wird hinter dem Modal gerendert)
             loadContent('welcome');
         };
     </script>
