@@ -1,135 +1,391 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="dark">
 <head>
     <meta charset="UTF-8">
-    <title>IT Trainer - Zahlensysteme</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informatik Lernmodul</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #020617; color: white; font-family: sans-serif; }
-        .card { background-color: #0f172a; border: 1px solid #1e293b; border-radius: 2rem; padding: 2rem; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        
+        .nav-item:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+        .dark .nav-item:hover {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+        .nav-item.active {
+            background-color: #2563eb;
+            color: white;
+        }
+        .topic-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .topic-card:hover {
+            transform: translateY(-5px);
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 overflow-x-hidden">
+
+    <!-- Mobile Navigation Toggle -->
+    <button id="menu-btn" class="fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md lg:hidden">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:block">
+            <div class="h-full flex flex-col px-3 py-4">
+                <div class="flex items-center mb-10 px-2 cursor-pointer" onclick="loadContent('welcome')">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white mr-3">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <span class="text-xl font-bold text-gray-800 dark:text-white tracking-tight">InfoLern</span>
+                </div>
+                
+                <nav class="space-y-2 flex-1 overflow-y-auto" id="main-nav">
+                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Einführung</p>
+                    <a href="#" onclick="loadContent('welcome')" data-topic="welcome" class="nav-item active flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
+                        <i class="fas fa-home w-5 mr-3"></i> Willkommen
+                    </a>
+                    
+                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Grundlagen</p>
+                    <a href="#" onclick="loadContent('binary')" data-topic="binary" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
+                        <i class="fas fa-binary w-5 mr-3"></i> Binärsystem
+                    </a>
+                    <a href="#" onclick="loadContent('practice')" data-topic="practice" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors">
+                        <i class="fas fa-dumbbell w-5 mr-3"></i> Übung: Umrechnung
+                    </a>
+                    
+                    <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Hardware</p>
+                    <a href="#" class="nav-item flex items-center p-3 text-sm font-medium rounded-xl transition-colors opacity-50 cursor-not-allowed">
+                        <i class="fas fa-microchip w-5 mr-3"></i> Komponenten (Bald)
+                    </a>
+                </nav>
+
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto">
+                    <button id="theme-toggle" class="flex items-center w-full p-3 text-sm font-medium rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <span class="dark:hidden flex items-center">
+                            <i class="fas fa-moon w-5 mr-3"></i> Dunkelmodus an
+                        </span>
+                        <span class="hidden dark:flex items-center">
+                            <i class="fas fa-sun w-5 mr-3"></i> Hellmodus an
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 min-w-0 bg-white lg:bg-gray-50 dark:bg-gray-950 overflow-auto">
+            <div class="max-w-4xl mx-auto py-12 px-6 sm:px-12 lg:py-20">
+                <div id="content-area" class="bg-white dark:bg-gray-900 p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 min-h-[600px] transition-all duration-300">
+                    <div id="dynamic-content">
+                        <!-- Content wird per JS geladen -->
+                    </div>
+                </div>
+                
+                <footer class="mt-12 text-center text-gray-400 dark:text-gray-600 text-sm">
+                    <p>&copy; 2024 Informatik-Lernmodul. Erstellt für GitHub Pages.</p>
+                </footer>
+            </div>
+        </main>
+    </div>
 
     <script>
-        const h = React.createElement;
+        // Übungs-Logik State
+        let practiceState = {
+            level: '',
+            currentTask: 0,
+            correctCount: 0,
+            totalTasks: 20,
+            currentAnswer: '',
+            expectedAnswer: '', // Ohne Leerzeichen für internen Vergleich
+            feedback: null
+        };
 
-        function App() {
-            const [view, setView] = React.useState('start');
-            const [name, setName] = React.useState('');
-            const [score, setScore] = React.useState(0);
-            const [taskIdx, setTaskIdx] = React.useState(0);
-            const [tasks, setTasks] = React.useState([]);
-            const [input, setInput] = React.useState('');
-            const [solved, setSolved] = React.useState(false);
-
-            function start(diff) {
-                const t = [];
-                for(let i=0; i<20; i++) {
-                    const dec = Math.floor(Math.random() * (diff === 'G' ? 64 : 255));
-                    t.push({
-                        q: i < 10 ? dec : dec.toString(2).padStart(8, '0'),
-                        a: i < 10 ? dec.toString(2).padStart(8, '0') : dec.toString(),
-                        label: i < 10 ? "Dezimal -> Binär" : "Binär -> Dezimal"
-                    });
+        // Hilfsfunktion: Formatiert Binärstring in 4er Blöcke von rechts
+        function formatBinary(binStr) {
+            let result = '';
+            let count = 0;
+            for (let i = binStr.length - 1; i >= 0; i--) {
+                result = binStr[i] + result;
+                count++;
+                if (count % 4 === 0 && i !== 0) {
+                    result = ' ' + result;
                 }
-                setTasks(t);
-                setView('game');
             }
-
-            if (view === 'start') {
-                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen p-4'},
-                    h('h1', {className: 'text-4xl font-black mb-8'}, 'IT TRAINER'),
-                    h('div', {className: 'card w-full max-w-sm text-center'},
-                        h('input', {
-                            className: 'w-full p-4 rounded-xl bg-slate-900 border border-slate-700 mb-4 text-center',
-                            placeholder: 'Dein Name',
-                            value: name,
-                            onChange: e => setName(e.target.value)
-                        }),
-                        h('button', {
-                            className: 'w-full bg-blue-600 p-4 rounded-xl font-bold uppercase',
-                            onClick: () => setView('menu'),
-                            disabled: !name
-                        }, 'Starten')
-                    )
-                );
-            }
-
-            if (view === 'menu') {
-                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen p-4'},
-                    h('h2', {className: 'text-2xl mb-8 font-bold text-blue-400'}, 'Niveau wählen:'),
-                    h('div', {className: 'space-y-4 w-full max-w-sm'},
-                        ['G', 'M', 'E'].map(l => h('button', {
-                            key: l,
-                            className: 'w-full bg-slate-800 p-6 rounded-2xl border-l-4 border-blue-500 text-left font-bold',
-                            onClick: () => start(l)
-                        }, l === 'G' ? 'Grundlagen (6-Bit)' : 'Mittelstufe (8-Bit)'))
-                    )
-                );
-            }
-
-            if (view === 'game') {
-                const curr = tasks[taskIdx];
-                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen p-4'},
-                    h('div', {className: 'card w-full max-w-md text-center shadow-2xl'},
-                        h('p', {className: 'text-blue-500 font-bold mb-2'}, curr.label),
-                        h('div', {className: 'text-6xl font-mono font-black mb-8'}, curr.q),
-                        !solved ? h('div', null, 
-                            h('input', {
-                                className: 'w-full p-6 bg-slate-950 border-2 border-slate-700 rounded-xl text-3xl text-center mb-4',
-                                value: input,
-                                onChange: e => setInput(e.target.value),
-                                autoFocus: true
-                            }),
-                            h('button', {
-                                className: 'w-full bg-blue-600 p-4 rounded-xl font-bold',
-                                onClick: () => {
-                                    if(input.trim() === curr.a) setScore(s => s+1);
-                                    setSolved(true);
-                                }
-                            }, 'Prüfen')
-                        ) : h('div', null,
-                            h('div', {className: 'p-4 rounded-xl mb-4 ' + (input.trim() === curr.a ? 'bg-green-900' : 'bg-red-900')}, 
-                                input.trim() === curr.a ? 'Richtig!' : 'Falsch! Lösung: ' + curr.a
-                            ),
-                            h('button', {
-                                className: 'w-full bg-white text-black p-4 rounded-xl font-bold',
-                                onClick: () => {
-                                    if(taskIdx < 19) {
-                                        setTaskIdx(taskIdx + 1);
-                                        setSolved(false);
-                                        setInput('');
-                                    } else {
-                                        setView('end');
-                                    }
-                                }
-                            }, 'Weiter')
-                        )
-                    )
-                );
-            }
-
-            if (view === 'end') {
-                return h('div', {className: 'flex flex-col items-center justify-center min-h-screen'},
-                    h('h1', {className: 'text-5xl font-black mb-4'}, 'FERTIG!'),
-                    h('div', {className: 'card text-center'},
-                        h('p', null, 'Dein Ergebnis:'),
-                        h('div', {className: 'text-6xl font-bold text-blue-500'}, score + ' / 20')
-                    ),
-                    h('button', {
-                        className: 'mt-8 text-blue-400 font-bold',
-                        onClick: () => location.reload()
-                    }, 'Nochmal spielen')
-                );
-            }
+            return result;
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(h(App));
+        const topics = {
+            welcome: `
+                <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-widest mb-4">
+                    <span class="h-px w-8 bg-blue-600 dark:bg-blue-400"></span>
+                    <span>Übersicht</span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">Was möchtest du heute lernen?</h1>
+                <p class="text-lg text-gray-600 dark:text-gray-300 mb-12 leading-relaxed">Wähle ein Modul aus, um zu starten. Wir empfehlen mit der Einführung zu beginnen.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div onclick="loadContent('binary')" class="topic-card cursor-pointer p-8 bg-blue-50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-800/50 hover:shadow-xl hover:shadow-blue-500/10">
+                        <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6"><i class="fas fa-binary text-xl"></i></div>
+                        <h3 class="text-xl font-bold mb-3 dark:text-white">Binärsystem: Theorie</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">Verstehe die Grundlagen von Bits und Bytes sowie die Stellenwerte.</p>
+                        <span class="text-blue-600 dark:text-blue-400 font-bold text-sm flex items-center">Ansehen <i class="fas fa-arrow-right ml-2"></i></span>
+                    </div>
+                    <div onclick="loadContent('practice')" class="topic-card cursor-pointer p-8 bg-purple-50 dark:bg-purple-900/20 rounded-3xl border border-purple-100 dark:border-purple-800/50 hover:shadow-xl hover:shadow-purple-500/10">
+                        <div class="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center text-white mb-6"><i class="fas fa-dumbbell text-xl"></i></div>
+                        <h3 class="text-xl font-bold mb-3 dark:text-white">Übung: Umrechnung</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">Trainiere dein Wissen in 3 Schwierigkeitsstufen (G, M, E Niveau).</p>
+                        <span class="text-purple-600 dark:text-purple-400 font-bold text-sm flex items-center">Jetzt trainieren <i class="fas fa-arrow-right ml-2"></i></span>
+                    </div>
+                </div>
+            `,
+            binary: `
+                <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-widest mb-4">
+                    <span class="h-px w-8 bg-blue-600 dark:bg-blue-400"></span>
+                    <span>Grundlagen</span>
+                </div>
+                <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6">Das Binärsystem</h1>
+                <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">Computer kennen nur Strom an (1) oder aus (0).</p>
+                <div class="flex flex-wrap gap-4 mb-8 justify-center">
+                    ${[128, 64, 32, 16, 8, 4, 2, 1].map(val => `
+                        <div class="flex flex-col items-center">
+                            <button onclick="toggleBit(this, ${val})" class="w-12 h-12 rounded-full border-2 border-blue-500 flex items-center justify-center font-bold text-blue-500 hover:bg-blue-500 hover:text-white transition-all bit-btn" data-active="false">0</button>
+                            <span class="text-xs mt-2 font-mono text-gray-400">${val}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-2xl text-center mb-8">
+                    <div id="decimal-result" class="text-5xl font-mono font-bold text-blue-600 dark:text-blue-400 mt-2">0</div>
+                </div>
+                <button onclick="loadContent('welcome')" class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl">Zurück</button>
+            `,
+            practice: `
+                <div class="flex items-center space-x-2 text-purple-600 dark:text-purple-400 text-sm font-bold uppercase tracking-widest mb-4">
+                    <span class="h-px w-8 bg-purple-600 dark:bg-purple-400"></span>
+                    <span>Trainingseinheit</span>
+                </div>
+                <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6">Binärcode Umrechnung</h1>
+                <p class="text-lg text-gray-600 dark:text-gray-300 mb-10">Wähle dein Niveau aus. Jede Runde besteht aus 20 Aufgaben.</p>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    <button onclick="startPractice('G')" class="flex items-center justify-between p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl hover:scale-[1.02] transition-transform">
+                        <div class="text-left">
+                            <span class="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full uppercase">G-Niveau</span>
+                            <h4 class="text-xl font-bold mt-2 dark:text-white">Grundlegend</h4>
+                            <p class="text-sm text-gray-500">Zahlen bis 6 Stellen (0 - 63)</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-green-500"></i>
+                    </button>
+                    
+                    <button onclick="startPractice('M')" class="flex items-center justify-between p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl hover:scale-[1.02] transition-transform">
+                        <div class="text-left">
+                            <span class="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full uppercase">M-Niveau</span>
+                            <h4 class="text-xl font-bold mt-2 dark:text-white">Mittleres Niveau</h4>
+                            <p class="text-sm text-gray-500">Zahlen bis 8 Stellen (0 - 255)</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-blue-500"></i>
+                    </button>
+                    
+                    <button onclick="startPractice('E')" class="flex items-center justify-between p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl hover:scale-[1.02] transition-transform">
+                        <div class="text-left">
+                            <span class="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full uppercase">E-Niveau</span>
+                            <h4 class="text-xl font-bold mt-2 dark:text-white">Erweitert</h4>
+                            <p class="text-sm text-gray-500">Zahlen bis 10 Stellen (0 - 1023)</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-red-500"></i>
+                    </button>
+                </div>
+            `
+        };
+
+        function loadContent(topicId) {
+            const contentArea = document.getElementById('content-area');
+            contentArea.style.opacity = '0';
+            setTimeout(() => {
+                contentArea.innerHTML = `<div id="dynamic-content">${topics[topicId]}</div>`;
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                    if(item.getAttribute('data-topic') === topicId) item.classList.add('active');
+                });
+                contentArea.style.opacity = '1';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 200);
+        }
+
+        // --- Practice Logic ---
+        function startPractice(level) {
+            practiceState = {
+                level: level,
+                currentTask: 1,
+                correctCount: 0,
+                totalTasks: 20,
+                feedback: null
+            };
+            renderTask();
+        }
+
+        function renderTask() {
+            const bits = practiceState.level === 'G' ? 6 : (practiceState.level === 'M' ? 8 : 10);
+            const maxVal = Math.pow(2, bits) - 1;
+            const randomVal = Math.floor(Math.random() * (maxVal + 1));
+            const isBinaryToDecimal = Math.random() > 0.5;
+            
+            let question, placeholder;
+            if (isBinaryToDecimal) {
+                const rawBin = randomVal.toString(2).padStart(bits, '0');
+                const formattedBin = formatBinary(rawBin);
+                question = `Wandle <span class="font-mono text-purple-600 dark:text-purple-400 font-bold tracking-wider">${formattedBin}</span> in eine Dezimalzahl um:`;
+                practiceState.expectedAnswer = randomVal.toString();
+                placeholder = "Dezimalzahl eingeben...";
+            } else {
+                question = `Wandle die Zahl <span class="font-mono text-purple-600 dark:text-purple-400 font-bold">${randomVal}</span> in einen Binärcode um (${bits} Bit):`;
+                practiceState.expectedAnswer = randomVal.toString(2).padStart(bits, '0');
+                placeholder = "Binärcode (z.B. ${formatBinary(practiceState.expectedAnswer)})";
+            }
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="flex justify-between items-center mb-8">
+                    <span class="text-sm font-bold text-gray-400 uppercase tracking-widest">Niveau: ${practiceState.level}</span>
+                    <span class="text-sm font-bold text-purple-600 dark:text-purple-400">Aufgabe ${practiceState.currentTask} / ${practiceState.totalTasks}</span>
+                </div>
+                
+                <div class="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-12 overflow-hidden">
+                    <div class="bg-purple-600 h-full transition-all duration-500" style="width: ${(practiceState.currentTask / practiceState.totalTasks) * 100}%"></div>
+                </div>
+
+                <div class="text-center mb-10">
+                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-6">${question}</p>
+                    <input type="text" id="answer-input" autofocus placeholder="${placeholder}" 
+                           class="w-full max-w-md p-4 text-2xl text-center font-mono border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl focus:border-purple-500 outline-none transition-all">
+                </div>
+
+                <div id="feedback-area" class="h-12 mb-8 text-center font-bold"></div>
+
+                <div class="flex justify-center">
+                    <button id="submit-btn" onclick="checkAnswer()" class="px-12 py-4 bg-purple-600 text-white font-bold rounded-2xl shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105">
+                        Prüfen
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('answer-input').addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') checkAnswer();
+            });
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById('answer-input');
+            const btn = document.getElementById('submit-btn');
+            const feedback = document.getElementById('feedback-area');
+            
+            // Ignoriere alle Leerzeichen in der Antwort der Schüler
+            const userAnswer = input.value.trim().replace(/\s/g, '');
+
+            if (userAnswer === "") return;
+
+            input.disabled = true;
+            btn.disabled = true;
+
+            if (userAnswer === practiceState.expectedAnswer) {
+                practiceState.correctCount++;
+                feedback.innerHTML = `<span class="text-green-500"><i class="fas fa-check-circle mr-2"></i> Richtig!</span>`;
+                input.classList.add('border-green-500', 'bg-green-50', 'dark:bg-green-900/20');
+            } else {
+                // Bei Fehlern zeigen wir die Antwort formatiert an, wenn es Binär war
+                const displayAnswer = (practiceState.expectedAnswer.length > 5 && !isNaN(parseInt(practiceState.expectedAnswer[0]))) 
+                                      ? formatBinary(practiceState.expectedAnswer) 
+                                      : practiceState.expectedAnswer;
+                                      
+                feedback.innerHTML = `<span class="text-red-500"><i class="fas fa-times-circle mr-2"></i> Falsch! Richtig wäre: ${displayAnswer}</span>`;
+                input.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
+            }
+
+            setTimeout(() => {
+                if (practiceState.currentTask < practiceState.totalTasks) {
+                    practiceState.currentTask++;
+                    renderTask();
+                } else {
+                    showFinalResult();
+                }
+            }, 1500);
+        }
+
+        function showFinalResult() {
+            const percentage = (practiceState.correctCount / practiceState.totalTasks) * 100;
+            let message = percentage >= 80 ? "Hervorragend!" : (percentage >= 50 ? "Gut gemacht!" : "Übung macht den Meister!");
+            
+            document.getElementById('content-area').innerHTML = `
+                <div class="text-center py-10">
+                    <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h2 class="text-3xl font-extrabold mb-2 dark:text-white">${message}</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg">Du hast ${practiceState.correctCount} von ${practiceState.totalTasks} Aufgaben richtig gelöst.</p>
+                    
+                    <div class="max-w-xs mx-auto bg-gray-100 dark:bg-gray-800 rounded-2xl p-6 mb-10">
+                        <div class="text-4xl font-bold text-purple-600 mb-1">${percentage}%</div>
+                        <div class="text-xs uppercase font-bold text-gray-400">Erfolgsquote</div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="loadContent('practice')" class="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700">Nochmal versuchen</button>
+                        <button onclick="loadContent('welcome')" class="px-8 py-3 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-300">Zum Hauptmenü</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Init
+        window.onload = () => loadContent('welcome');
+
+        // Toggle Bit Logic
+        let currentTotal = 0;
+        function toggleBit(btn, value) {
+            const isActive = btn.getAttribute('data-active') === 'true';
+            if (isActive) {
+                btn.setAttribute('data-active', 'false');
+                btn.innerText = '0';
+                btn.classList.remove('bg-blue-600', 'text-white');
+                currentTotal -= value;
+            } else {
+                btn.setAttribute('data-active', 'true');
+                btn.innerText = '1';
+                btn.classList.add('bg-blue-600', 'text-white');
+                currentTotal += value;
+            }
+            document.getElementById('decimal-result').innerText = currentTotal;
+        }
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Mobile Menu
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        });
     </script>
 </body>
 </html>
