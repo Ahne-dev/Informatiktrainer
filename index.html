@@ -46,9 +46,45 @@
             border-radius: 12px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .dark .glass-effect {
+            background-color: rgba(15, 23, 42, 0.9);
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 overflow-x-hidden">
+
+    <!-- Start/Login Overlay -->
+    <div id="start-overlay" class="fixed inset-0 z-[200] flex items-center justify-center p-4 glass-effect">
+        <div class="bg-white dark:bg-gray-900 w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-gray-800 text-center">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg shadow-blue-500/30">
+                <i class="fas fa-code text-2xl"></i>
+            </div>
+            <h2 class="text-3xl font-extrabold mb-2 dark:text-white">Willkommen!</h2>
+            <p id="start-desc" class="text-gray-500 dark:text-gray-400 mb-8">Bereit für eine neue Lerneinheit?</p>
+            
+            <div class="space-y-4">
+                <div class="text-left">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 ml-1">Dein Name</label>
+                    <input type="text" id="initial-username" placeholder="Name eingeben..." 
+                           class="w-full p-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 rounded-2xl outline-none font-bold transition-all">
+                </div>
+                
+                <button onclick="confirmUser()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all transform active:scale-95">
+                    Jetzt weiterarbeiten
+                </button>
+                
+                <div class="pt-2">
+                    <button onclick="resetAllProgress(true)" class="text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-tight">
+                        <i class="fas fa-user-slash mr-1"></i> Neuer Schüler? Daten löschen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Mobile Navigation Toggle -->
     <button id="menu-btn" class="fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md lg:hidden">
@@ -145,7 +181,6 @@
             isActive: false
         };
 
-        // Statistiken initialisieren oder laden
         const defaultStats = {
             username: '',
             G: { completed: 0, best: 0 },
@@ -154,14 +189,21 @@
         };
 
         let globalStats = JSON.parse(localStorage.getItem('infoLernStats')) || {...defaultStats};
-
-        // Zufällige Namen Liste
         const randomNames = ["Anonymer Algorithmus", "Binärer Beobachter", "Compiler-Champion", "Daten-Detektiv", "Ethernet-Experte", "Firewall-Fan", "Giga-Guru", "Hardware-Held"];
 
-        // Initialer Name
-        if (!globalStats.username) {
-            globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
-            localStorage.setItem('infoLernStats', JSON.stringify(globalStats));
+        function confirmUser() {
+            const input = document.getElementById('initial-username');
+            const overlay = document.getElementById('start-overlay');
+            
+            if (input.value.trim()) {
+                globalStats.username = input.value.trim();
+            } else if (!globalStats.username) {
+                globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
+            }
+            
+            saveGlobalStats();
+            overlay.classList.add('hidden');
+            loadContent('welcome');
         }
 
         // Sitzung laden
@@ -215,21 +257,8 @@
                 </div>
                 
                 <div class="mb-12">
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-                        <div>
-                            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-2">Hallo! Wie heißt du?</h1>
-                            <p class="text-gray-500 dark:text-gray-400">Gib deinen Namen ein, um deinen Fortschritt zu speichern.</p>
-                        </div>
-                        <button onclick="resetAllProgress()" class="text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg border border-red-100 dark:border-red-800 transition-colors">
-                            <i class="fas fa-user-slash mr-2"></i> Neuer Schüler? Daten löschen
-                        </button>
-                    </div>
-
-                    <div class="flex gap-4 max-w-md">
-                        <input type="text" id="username-input" value="${globalStats.username}" placeholder="Dein Name..." 
-                               class="flex-1 p-4 bg-gray-100 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none font-bold transition-all">
-                        <button onclick="updateName()" class="px-6 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-500/20">Speichern</button>
-                    </div>
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">Bereit für Informatik, ${globalStats.username}?</h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">Wähle ein Modul aus, um zu starten. Dein Fortschritt wird automatisch in deinem Lernpass gespeichert.</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -338,15 +367,6 @@
                 </div>
             `
         };
-
-        function updateName() {
-            const input = document.getElementById('username-input');
-            if (input && input.value.trim()) {
-                globalStats.username = input.value.trim();
-                saveGlobalStats();
-                loadContent('welcome'); 
-            }
-        }
 
         function loadContent(topicId) {
             const contentArea = document.getElementById('content-area');
@@ -516,16 +536,24 @@
             });
         }
 
-        function resetAllProgress() {
-            if (confirm("Möchtest du wirklich alle Statistiken und den Namen löschen, um für einen neuen Schüler Platz zu machen?")) {
+        function resetAllProgress(fromStart = false) {
+            const msg = fromStart ? "Möchtest du wirklich alle Daten löschen und als neuer Schüler starten?" : "Möchtest du wirklich alle Statistiken und den Namen löschen?";
+            if (confirm(msg)) {
                 localStorage.clear();
                 globalStats = {...defaultStats};
                 globalStats.username = randomNames[Math.floor(Math.random() * randomNames.length)];
                 practiceState.isActive = false;
                 localStorage.setItem('infoLernStats', JSON.stringify(globalStats));
-                loadContent('welcome');
-                updateUI();
-                updateSidebarStatus();
+                
+                if (fromStart) {
+                    // Update Overlay
+                    document.getElementById('initial-username').value = globalStats.username;
+                    document.getElementById('start-desc').innerText = "Alle Daten wurden gelöscht. Viel Erfolg beim Neustart!";
+                } else {
+                    loadContent('welcome');
+                    updateUI();
+                    updateSidebarStatus();
+                }
             }
         }
 
@@ -559,8 +587,22 @@
         });
 
         window.onload = () => {
-            loadContent('welcome');
+            // Check for existing data to customize modal
+            const nameInput = document.getElementById('initial-username');
+            const desc = document.getElementById('start-desc');
+            
+            if (globalStats.username && localStorage.getItem('infoLernStats')) {
+                nameInput.value = globalStats.username;
+                desc.innerHTML = `Willkommen zurück, <span class="font-bold text-blue-600">${globalStats.username}</span>!`;
+            } else {
+                nameInput.value = "";
+                desc.innerText = "Bitte gib deinen Namen ein, um zu starten.";
+            }
+
             if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+            
+            // Standardmäßig Welcome laden (wird hinter dem Modal gerendert)
+            loadContent('welcome');
         };
     </script>
 </body>
