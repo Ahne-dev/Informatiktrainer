@@ -11,37 +11,57 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #020617; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617; 
+            margin: 0;
+            color: white;
+        }
+        /* Verhindert das Flackern beim Laden */
+        [v-cloak] { display: none; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="text-blue-500 font-bold animate-pulse uppercase tracking-widest">Lade Umgebung...</div>
+        </div>
+    </div>
 
     <script type="text/babel">
+        // Sicherstellen, dass wir auf die globalen Variablen zugreifen
         const { useState, useMemo, useEffect } = React;
 
-        // Icon Komponente fixiert für Browser-Nutzung
+        // Robuste Icon-Komponente
         const Icon = ({ name, size = 24, className = "" }) => {
-            const [svg, setSvg] = React.useState("");
-            React.useEffect(() => {
-                if (window.lucide && window.lucide.icons[name]) {
-                    const iconSvg = window.lucide.icons[name].toSvg({
-                        width: size,
-                        height: size,
-                        class: className,
-                        'stroke-width': 2
-                    });
-                    setSvg(iconSvg);
-                }
+            const [svg, setSvg] = useState("");
+            
+            useEffect(() => {
+                const renderIcon = () => {
+                    if (window.lucide && window.lucide.icons && window.lucide.icons[name]) {
+                        const iconSvg = window.lucide.icons[name].toSvg({
+                            width: size,
+                            height: size,
+                            class: className,
+                            'stroke-width': 2
+                        });
+                        setSvg(iconSvg);
+                    }
+                };
+
+                renderIcon();
+                // Falls Lucide noch nicht bereit war, kurz warten und nochmal versuchen
+                const timer = setTimeout(renderIcon, 100);
+                return () => clearTimeout(timer);
             }, [name, size, className]);
-            return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-block" />;
+
+            return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center" />;
         };
 
         const BINARY_LOGIC = {
             formatBinary: (binStr) => {
                 if (typeof binStr !== 'string' || !/^[01]+$/.test(binStr)) return binStr;
-                return binStr.replace(/\B(?=(\d{4})+(?!\d))/g, " ");
+                return binStr.split('').reverse().join('').match(/.{1,4}/g).join(' ').split('').reverse().join('');
             },
             createTasks: (diff) => {
                 const tasks = [];
@@ -64,7 +84,7 @@
                             decimal = Math.floor(Math.random() * 4096);
                             question = isBinToDec ? decimal.toString(2).padStart(12, '0') : decimal;
                             answer = isBinToDec ? decimal.toString() : decimal.toString(2).padStart(12, '0');
-                            label = isBinToDec ? 'Binär → Dezimal' : 'Dezimal → Binär';
+                            label = isBinToDec ? '12-Bit Umwandlung' : 'Dezimal → Binär';
                         } else if (mode < 0.7) {
                             decimal = Math.floor(Math.random() * 256);
                             question = isBinToDec ? decimal.toString(16).toUpperCase() : decimal;
@@ -75,7 +95,7 @@
                             const bit8 = (decimal < 0 ? (256 + decimal) : decimal).toString(2).padStart(8, '0');
                             question = isBinToDec ? bit8 : decimal;
                             answer = isBinToDec ? decimal.toString() : bit8;
-                            label = isBinToDec ? '2er-Komplement → Dez' : 'Dez → 2er-Komplement';
+                            label = isBinToDec ? 'Zweierkomplement' : 'Dezimal → Komplement';
                         }
                     }
                     tasks.push({ question, answer: answer.toString(), label });
@@ -88,23 +108,24 @@
             const [view, setView] = useState('welcome');
             const [user, setUser] = useState({ name: '', progress: { G: 0, M: 0, E: 0 } });
             const [difficulty, setDifficulty] = useState('G');
-            const [session, setSession] = useState({ tasks: [], currentIndex: 0, score: 0, isActive: false });
+            const [session, setSession] = useState({ tasks: [], currentIndex: 0, score: 0 });
             const [userInput, setUserInput] = useState('');
             const [feedback, setFeedback] = useState(null);
 
             const startTraining = (lvl) => {
-                const tasks = BINARY_LOGIC.createTasks(lvl);
+                setSession({ tasks: BINARY_LOGIC.createTasks(lvl), currentIndex: 0, score: 0 });
                 setDifficulty(lvl);
-                setSession({ tasks, currentIndex: 0, score: 0, isActive: true });
                 setFeedback(null);
                 setUserInput('');
                 setView('exercise');
             };
 
             const handleCheck = () => {
+                if (!userInput) return;
                 const current = session.tasks[session.currentIndex];
-                const cleanIn = userInput.trim().replace(/\s+/g, '').toUpperCase();
-                const cleanAns = current.answer.replace(/\s+/g, '').toUpperCase();
+                const cleanIn = userInput.trim().toUpperCase();
+                const cleanAns = current.answer.toUpperCase();
+                
                 if (cleanIn === cleanAns) {
                     setFeedback({ correct: true, val: current.answer });
                     setSession(s => ({ ...s, score: s.score + 1 }));
@@ -123,121 +144,89 @@
                         ...prev, 
                         progress: { ...prev.progress, [difficulty]: prev.progress[difficulty] + session.score } 
                     }));
-                    setSession(s => ({ ...s, isActive: false }));
                     setView('summary');
                 }
             };
 
-            const qrUrl = useMemo(() => {
-                const data = JSON.stringify({ name: user.name, scores: user.progress });
-                return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}&bgcolor=0f172a&color=f8fafc`;
-            }, [user]);
-
             return (
-                <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-4">
-                    <div className="max-w-2xl mx-auto w-full pt-10">
+                <div className="min-h-screen flex flex-col items-center justify-center p-6">
+                    <div className="w-full max-w-xl">
                         
                         {view === 'welcome' && (
-                            <div className="text-center animate-in fade-in duration-700">
-                                <div className="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/20 transform -rotate-3">
-                                    <Icon name="Binary" size={40} className="text-white" />
+                            <div className="text-center space-y-8">
+                                <div className="bg-blue-600 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl rotate-3">
+                                    <Icon name="Binary" size={48} />
                                 </div>
-                                <h1 className="text-4xl font-black mb-2 uppercase tracking-tight">IT Trainer</h1>
-                                <p className="text-slate-400 mb-10">Meistere die Informatik Grundlagen.</p>
-                                <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl">
+                                <h1 className="text-5xl font-black uppercase tracking-tighter">IT Trainer</h1>
+                                <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
                                     <input 
-                                        type="text" placeholder="Dein Name..." 
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-6 py-4 mb-4 text-white font-bold outline-none focus:border-blue-500 transition-all"
-                                        value={user.name} onChange={e => setUser({...user, name: e.target.value})}
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-2xl p-4 mb-4 text-center font-bold outline-none focus:border-blue-500"
+                                        placeholder="Dein Name..." value={user.name} onChange={e => setUser({...user, name: e.target.value})}
                                     />
                                     <button 
                                         disabled={!user.name} onClick={() => setView('dashboard')}
-                                        className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-30 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg"
-                                    >
-                                        Starten
-                                    </button>
+                                        className="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-30"
+                                    > Starten </button>
                                 </div>
                             </div>
                         )}
 
                         {view === 'dashboard' && (
-                            <div className="space-y-6">
-                                <header className="flex justify-between items-center">
-                                    <div>
-                                        <h2 className="text-2xl font-black text-white">{user.name}</h2>
-                                        <p className="text-xs text-slate-500 uppercase font-bold tracking-widest">Informatik-Dashboard</p>
+                            <div className="space-y-6 text-center">
+                                <div className="flex justify-between items-center mb-10">
+                                    <h2 className="text-2xl font-black">{user.name}</h2>
+                                    <button onClick={() => setView('stats')} className="p-3 bg-slate-900 rounded-xl border border-slate-800"><Icon name="BarChart3" /></button>
+                                </div>
+                                <div onClick={() => setView('level-select')} className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 cursor-pointer hover:border-blue-500 transition-all group">
+                                    <div className="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                                        <Icon name="Hash" />
                                     </div>
-                                    <button onClick={() => setView('stats')} className="p-3 bg-slate-900 rounded-2xl border border-slate-800 text-slate-400 hover:text-white transition-all">
-                                        <Icon name="BarChart3" size={24} />
-                                    </button>
-                                </header>
-
-                                <div onClick={() => setView('level-select')} className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 hover:border-blue-500/50 cursor-pointer transition-all group">
-                                    <div className="bg-blue-600 w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                        <Icon name="Hash" size={24} className="text-white" />
-                                    </div>
-                                    <h3 className="text-xl font-black text-white mb-2 uppercase">Zahlensysteme</h3>
-                                    <p className="text-slate-400 text-sm mb-4">Übe Binär, Hex & 2er-Komplement in 20er-Blöcken.</p>
-                                    <span className="text-blue-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">Auswählen <Icon name="ChevronRight" size={14} /></span>
+                                    <h3 className="text-xl font-black uppercase">Zahlensysteme</h3>
+                                    <p className="text-slate-400 text-sm mt-2">Binär, Hex & Komplement Training</p>
                                 </div>
                             </div>
                         )}
 
                         {view === 'level-select' && (
                             <div className="space-y-4">
-                                <button onClick={() => setView('dashboard')} className="text-slate-500 text-xs font-black uppercase flex items-center gap-2 mb-4 hover:text-white transition-colors">
-                                    <Icon name="ArrowLeft" size={16} /> Zurück
-                                </button>
-                                <h2 className="text-3xl font-black mb-6 uppercase">Wähle Niveau</h2>
+                                <button onClick={() => setView('dashboard')} className="text-slate-500 font-bold text-xs uppercase mb-4 flex items-center gap-2"> <Icon name="ArrowLeft" size={16}/> Zurück</button>
                                 {['G', 'M', 'E'].map(lvl => (
-                                    <button key={lvl} onClick={() => startTraining(lvl)} className="w-full bg-slate-900 p-6 rounded-3xl border border-slate-800 text-left flex justify-between items-center hover:bg-slate-800 transition-all border-l-8 border-l-blue-600">
-                                        <div>
-                                            <h4 className="font-black text-white text-lg uppercase">{lvl === 'G' ? 'Grundlagen' : lvl === 'M' ? 'Mittelstufe' : 'Experte'}</h4>
-                                            <p className="text-slate-500 text-sm">{lvl === 'G' ? 'Bis 63' : lvl === 'M' ? 'Bis 255' : 'Hex & 2er-Komplement'}</p>
-                                        </div>
-                                        <Icon name="ChevronRight" className="text-slate-700" />
+                                    <button key={lvl} onClick={() => startTraining(lvl)} className="w-full bg-slate-900 p-8 rounded-3xl border border-slate-800 text-left border-l-8 border-l-blue-600 hover:bg-slate-800 transition-all flex justify-between items-center">
+                                        <span className="text-xl font-black uppercase tracking-wide">{lvl === 'G' ? 'Grundlagen' : lvl === 'M' ? 'Mittelstufe' : 'Experte'}</span>
+                                        <Icon name="ChevronRight" />
                                     </button>
                                 ))}
                             </div>
                         )}
 
                         {view === 'exercise' && (
-                            <div className="animate-in fade-in zoom-in duration-300">
-                                <div className="flex justify-between items-center mb-4">
-                                    <span className="bg-slate-900 px-4 py-2 rounded-full text-[10px] font-black uppercase text-slate-500 border border-slate-800">Aufgabe {session.currentIndex + 1}/20</span>
-                                    <button onClick={() => setView('dashboard')} className="text-slate-500 hover:text-white text-xs font-black uppercase">Pause</button>
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                                    <span>Aufgabe {session.currentIndex + 1} / 20</span>
+                                    <button onClick={() => setView('dashboard')}>Pause</button>
                                 </div>
-                                
-                                <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 text-center shadow-2xl">
-                                    <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">{session.tasks[session.currentIndex].label}</p>
-                                    <div className="text-5xl md:text-6xl font-mono font-black text-white mb-10 break-all leading-tight">
+                                <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 text-center shadow-2xl">
+                                    <p className="text-blue-500 text-[10px] font-black uppercase tracking-widest mb-6">{session.tasks[session.currentIndex].label}</p>
+                                    <div className="text-5xl font-mono font-black mb-12">
                                         {BINARY_LOGIC.formatBinary(session.tasks[session.currentIndex].question.toString())}
                                     </div>
 
                                     {!feedback ? (
                                         <div className="space-y-4">
                                             <input 
-                                                type="text" autoFocus className="w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-6 text-3xl font-mono text-center text-white outline-none focus:border-blue-600 transition-all"
-                                                placeholder="Ergebnis..." value={userInput} onChange={e => setUserInput(e.target.value)}
-                                                onKeyDown={e => e.key === 'Enter' && handleCheck()}
+                                                autoFocus className="w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-6 text-3xl font-mono text-center outline-none focus:border-blue-600"
+                                                value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCheck()}
                                             />
-                                            <button onClick={handleCheck} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-500/20">Prüfen</button>
+                                            <button onClick={handleCheck} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase">Prüfen</button>
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            <div className={`p-6 rounded-2xl flex items-center justify-center gap-4 ${feedback.correct ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                <Icon name={feedback.correct ? "CheckCircle2" : "XCircle"} size={32} />
-                                                <span className="font-black uppercase text-xl">{feedback.correct ? 'Richtig!' : 'Falsch'}</span>
+                                            <div className={`p-6 rounded-2xl font-black uppercase flex items-center justify-center gap-4 ${feedback.correct ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                <Icon name={feedback.correct ? "CheckCircle2" : "XCircle"} />
+                                                {feedback.correct ? 'Richtig' : 'Falsch'}
                                             </div>
-                                            {!feedback.correct && (
-                                                <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800">
-                                                    <p className="text-slate-500 text-[10px] font-black uppercase mb-2">Die Lösung ist:</p>
-                                                    <p className="font-mono text-2xl font-black text-white tracking-widest">{BINARY_LOGIC.formatBinary(feedback.val)}</p>
-                                                </div>
-                                            )}
-                                            <button onClick={handleNext} className="w-full bg-white text-slate-950 py-5 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                                                Weiter <Icon name="ChevronRight" size={20} />
-                                            </button>
+                                            {!feedback.correct && <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 font-mono text-xl tracking-widest">{BINARY_LOGIC.formatBinary(feedback.val)}</div>}
+                                            <button onClick={handleNext} className="w-full bg-white text-slate-950 py-5 rounded-2xl font-black uppercase flex items-center justify-center gap-2">Weiter <Icon name="ChevronRight" /></button>
                                         </div>
                                     )}
                                 </div>
@@ -245,49 +234,41 @@
                         )}
 
                         {view === 'summary' && (
-                            <div className="text-center space-y-8 py-10">
-                                <div className="bg-yellow-500 w-24 h-24 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/20">
-                                    <Icon name="Trophy" size={48} className="text-white" />
+                            <div className="text-center space-y-8">
+                                <div className="bg-yellow-500 w-24 h-24 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/40">
+                                    <Icon name="Trophy" size={48} />
                                 </div>
-                                <h2 className="text-4xl font-black text-white uppercase tracking-tighter">Abgeschlossen</h2>
+                                <h2 className="text-4xl font-black uppercase">Fertig!</h2>
                                 <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800">
-                                    <p className="text-slate-500 font-bold uppercase text-xs mb-2">Dein Ergebnis</p>
+                                    <p className="text-slate-500 text-xs font-bold uppercase mb-2">Dein Score</p>
                                     <div className="text-7xl font-black text-blue-500">{session.score} <span className="text-2xl text-slate-700">/ 20</span></div>
                                 </div>
-                                <button onClick={() => setView('dashboard')} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase tracking-widest transition-all">Zum Dashboard</button>
+                                <button onClick={() => setView('dashboard')} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase">Dashboard</button>
                             </div>
                         )}
 
                         {view === 'stats' && (
                             <div className="space-y-6">
-                                <button onClick={() => setView('dashboard')} className="text-slate-500 text-xs font-black uppercase flex items-center gap-2 mb-4">
-                                    <Icon name="ArrowLeft" size={16} /> Dashboard
-                                </button>
-                                <h2 className="text-3xl font-black uppercase mb-8">Dein Progress</h2>
-                                <div className="grid gap-4">
-                                    {['G', 'M', 'E'].map(lvl => (
-                                        <div key={lvl} className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex justify-between items-center">
-                                            <span className="font-black text-white uppercase">{lvl}-Niveau</span>
-                                            <span className="font-mono text-2xl font-black text-blue-500">{user.progress[lvl]} Pkt</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="bg-slate-900 p-8 rounded-[3rem] border border-slate-800 flex flex-col items-center">
-                                    <div className="bg-white p-4 rounded-3xl mb-4">
-                                        <img src={qrUrl} alt="QR Code" className="w-40 h-40" />
+                                <button onClick={() => setView('dashboard')} className="text-slate-500 font-bold text-xs uppercase mb-8 flex items-center gap-2"> <Icon name="ArrowLeft" size={16}/> Dashboard</button>
+                                <h2 className="text-3xl font-black uppercase mb-8">Statistiken</h2>
+                                {['G', 'M', 'E'].map(lvl => (
+                                    <div key={lvl} className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex justify-between items-center">
+                                        <span className="font-black uppercase text-slate-400">{lvl}-Niveau</span>
+                                        <span className="text-2xl font-black text-blue-500">{user.progress[lvl]} Pkt</span>
                                     </div>
-                                    <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest text-center">QR-Code für Progress-Sync</p>
-                                </div>
+                                ))}
                             </div>
                         )}
 
                     </div>
-                    <footer className="mt-auto py-10 text-[10px] font-black uppercase tracking-[0.5em] text-slate-800 text-center">© 2024 IT Trainer Project</footer>
+                    <footer className="mt-20 opacity-20 text-[10px] font-black uppercase tracking-[0.5em]">© 2024 IT Trainer</footer>
                 </div>
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
+        // Render-Vorgang
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
         root.render(<App />);
     </script>
 </body>
